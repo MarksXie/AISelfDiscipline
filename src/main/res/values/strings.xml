@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">AI锁机自律</string>
+    <string name="accessibility_service_label">AI锁机自律 - 应用打开拦截保护服务</string>
+    <string name="accessibility_service_description">用于监听受保护应用的启动并在检测到打开时立即弹出 AI 理由审批全屏拦截窗，防止冲动使用与过度沉迷。</string>
+    <string name="foreground_service_title">AI锁机守护运行中</string>
+    <string name="foreground_service_content">正在守护您的专注力，端侧 AI 随时待命</string>
+</resources>
