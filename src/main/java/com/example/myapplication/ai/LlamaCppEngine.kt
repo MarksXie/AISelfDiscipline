@@ -125,9 +125,12 @@ ws          ::= [ \t\n]*
                 else -> if (decision == DecisionType.ALLOW) ReasonType.SPECIFIC_PURPOSE else ReasonType.OTHER
             }
 
+            val suggestedMinutes = json.optInt("suggested_minutes", json.optInt("suggestedMinutes", 15)).coerceIn(1, 480)
+
             EvaluationResult(
                 decision = decision,
                 reasonType = reasonType,
+                suggestedMinutes = suggestedMinutes,
                 guidanceTip = guidanceTip,
                 comment = comment,
                 rawResponse = jsonOutput,

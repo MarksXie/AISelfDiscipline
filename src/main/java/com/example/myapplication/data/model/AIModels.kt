@@ -38,6 +38,7 @@ data class ChatMessage(
 data class EvaluationResult(
     val decision: DecisionType = DecisionType.DENY,
     val reasonType: ReasonType = ReasonType.OTHER,
+    val suggestedMinutes: Int = 15, // AI 建议的放行时长
     val guidanceTip: String = "", // 大模型现场动态提炼的一句话输入引导
     val action: EvaluationAction = when (decision) {
         DecisionType.ALLOW -> EvaluationAction.APPROVE

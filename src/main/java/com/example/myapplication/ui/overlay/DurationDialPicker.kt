@@ -63,7 +63,8 @@ import kotlin.math.sin
 data class PresetDuration(
     val minutes: Int,
     val label: String,
-    val isMeeting: Boolean = false
+    val isMeeting: Boolean = false,
+    val isAi: Boolean = false
 )
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -71,23 +72,41 @@ data class PresetDuration(
 fun DurationDialPicker(
     modifier: Modifier = Modifier,
     initialMinutes: Int = 15,
+    aiSuggestedMinutes: Int? = null,
     onConfirm: (minutes: Int) -> Unit
 ) {
     var selectedMinutes by remember { mutableIntStateOf(initialMinutes) }
     var isDragging by remember { mutableStateOf(false) }
 
-    // 预设时长：涵盖短时专注、常规事务、中长程会议（最高 8 小时 / 480 分钟）
-    val presetDurations = listOf(
-        PresetDuration(15, "15分钟"),
-        PresetDuration(30, "30分钟"),
-        PresetDuration(45, "45分钟"),
-        PresetDuration(60, "1小时"),
-        PresetDuration(90, "1.5小时"),
-        PresetDuration(120, "2小时 (开会)", isMeeting = true),
-        PresetDuration(180, "3小时 (长会)", isMeeting = true),
-        PresetDuration(240, "4小时 (半天)", isMeeting = true),
-        PresetDuration(480, "8小时 (全天)", isMeeting = true)
-    )
+    // 预设时长：涵盖 AI 推荐、短时专注、常规事务、中长程会议（最高 8 小时 / 480 分钟）
+    val presetDurations = remember(aiSuggestedMinutes) {
+        val list = mutableListOf<PresetDuration>()
+        if (aiSuggestedMinutes != null && aiSuggestedMinutes > 0) {
+            val label = if (aiSuggestedMinutes >= 60 && aiSuggestedMinutes % 60 == 0) {
+                "✨ AI建议 ${aiSuggestedMinutes / 60}小时"
+            } else {
+                "✨ AI建议 ${aiSuggestedMinutes}分钟"
+            }
+            list.add(PresetDuration(aiSuggestedMinutes, label, isAi = true))
+        }
+        val defaultPresets = listOf(
+            PresetDuration(15, "15分钟"),
+            PresetDuration(30, "30分钟"),
+            PresetDuration(45, "45分钟"),
+            PresetDuration(60, "1小时"),
+            PresetDuration(90, "1.5小时"),
+            PresetDuration(120, "2小时 (开会)", isMeeting = true),
+            PresetDuration(180, "3小时 (长会)", isMeeting = true),
+            PresetDuration(240, "4小时 (半天)", isMeeting = true),
+            PresetDuration(480, "8小时 (全天)", isMeeting = true)
+        )
+        defaultPresets.forEach { item ->
+            if (list.none { it.minutes == item.minutes }) {
+                list.add(item)
+            }
+        }
+        list
+    }
 
     // 分段双精度映射算法
     fun minutesToAngle(minutes: Int): Float {
@@ -385,11 +404,20 @@ fun DurationDialPicker(
             presetDurations.forEach { preset ->
                 val isSelected = selectedMinutes == preset.minutes
                 val bgColor by animateColorAsState(
-                    if (isSelected) (if (preset.isMeeting) Color(0xFF00E5FF) else Color(0xFF00E676))
-                    else Color(0xFF1E2333),
+                    if (isSelected) {
+                        when {
+                            preset.isAi -> Color(0xFF00E5FF)
+                            preset.isMeeting -> Color(0xFF00E5FF)
+                            else -> Color(0xFF00E676)
+                        }
+                    } else if (preset.isAi) {
+                        Color(0xFF0A303F)
+                    } else {
+                        Color(0xFF1E2333)
+                    },
                     label = "chipBg"
                 )
-                val textColor = if (isSelected) Color.Black else Color.White
+                val textColor = if (isSelected) Color(0xFF0D0F18) else if (preset.isAi) Color(0xFF00E5FF) else Color.White
 
                 Box(
                     modifier = Modifier

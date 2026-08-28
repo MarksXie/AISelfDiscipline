@@ -8,6 +8,7 @@ import com.example.myapplication.data.model.EvaluationAction
 import com.example.myapplication.data.model.EvaluationResult
 import com.example.myapplication.data.model.ReasonType
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -27,9 +28,9 @@ class CloudOpenAIEngine(
         get() = "云端大模型 ($modelName)"
 
     private val httpClient: OkHttpClient = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(25, TimeUnit.SECONDS)
-        .writeTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(60, TimeUnit.SECONDS)
+        .readTimeout(180, TimeUnit.SECONDS)
+        .writeTimeout(60, TimeUnit.SECONDS)
         .build()
 
     companion object {
@@ -75,9 +76,14 @@ $dynamicAppContext
 {
   "decision": "ALLOW" | "RETRY" | "DENY",
   "reason_type": "SPECIFIC_PURPOSE" | "VAGUE_PURPOSE" | "IMPULSIVE_USE" | "HABITUAL_USE" | "APP_MISMATCH" | "OTHER",
+  "suggested_minutes": 整数（若为ALLOW，必须根据用户具体任务性质、规模与耗时自主推理计算得出合理的放行分钟数，如2、5、8、13、22、35、50等任意合理整数，严禁机械地固定套用15或30；若为RETRY或DENY填0）,
   "guidance_tip": "若为RETRY时针对性提炼的一句话引导补充建议（如'请具体说明要买什么物品'），若ALLOW或DENY可留空",
-  "comment": "简明扼要的说明或追问提问"
+  "comment": "简短精炼的说明或追问（严禁套话废话，必须在50字以内）"
 }
+
+【核心限制与推理法则】：
+1. 评语字数：comment 必须短小精炼、一针见血，严格控制在 50 字以内。
+2. 建议时长推理：suggested_minutes 必须由你根据任务难度与实际所需时长深度推理计算得出，禁止无脑返回固定值 15 或 30。
 """.trimIndent()
 
         messagesArray.put(JSONObject().apply {
@@ -104,7 +110,7 @@ $dynamicAppContext
             put("messages", messagesArray)
             put("enable_thinking", false)
             put("preserve_thinking", false)
-            put("max_completion_tokens", 80)
+            put("max_completion_tokens", 500)
             put("temperature", 0.3)
             put("stream", false)
             put("response_format", JSONObject().put("type", "json_object"))
@@ -119,81 +125,98 @@ $dynamicAppContext
             .post(requestBody)
             .build()
 
-        try {
-            httpClient.newCall(request).execute().use { response ->
-                val latency = System.currentTimeMillis() - startTime
-                val responseBodyStr = response.body?.string() ?: ""
+        for (attempt in 0..1) {
+            try {
+                httpClient.newCall(request).execute().use { response ->
+                    val latency = System.currentTimeMillis() - startTime
+                    val responseBodyStr = response.body?.string() ?: ""
 
-                if (!response.isSuccessful) {
-                    Log.e(TAG, "Cloud API call failed with code: ${response.code}, body: $responseBodyStr")
-                    val errorDetail = parseErrorMessage(responseBodyStr, response.code)
+                    if (!response.isSuccessful) {
+                        Log.e(TAG, "Cloud API call failed with code: ${response.code}, body: $responseBodyStr")
+                        val errorDetail = parseErrorMessage(responseBodyStr, response.code)
+                        return@withContext EvaluationResult(
+                            decision = DecisionType.DENY,
+                            reasonType = ReasonType.OTHER,
+                            comment = "云端 API 请求异常 (${response.code})：$errorDetail",
+                            rawResponse = responseBodyStr,
+                            latencyMs = latency
+                        )
+                    }
+
+                    val responseJson = JSONObject(responseBodyStr)
+                    val choices = responseJson.optJSONArray("choices")
+                    if (choices == null || choices.length() == 0) {
+                        return@withContext EvaluationResult(
+                            decision = DecisionType.DENY,
+                            reasonType = ReasonType.OTHER,
+                            comment = "云端大模型返回内容为空，请检查模型名称是否正确。",
+                            rawResponse = responseBodyStr,
+                            latencyMs = latency
+                        )
+                    }
+
+                    val messageObj = choices.getJSONObject(0).optJSONObject("message")
+                    val contentStr = messageObj?.optString("content") ?: ""
+                    val cleanJsonStr = extractJsonString(contentStr)
+
+                    val resultJson = JSONObject(cleanJsonStr)
+                    val decisionStr = resultJson.optString("decision", resultJson.optString("action", ""))
+                    val reasonTypeStr = resultJson.optString("reason_type", "")
+                    val guidanceTip = resultJson.optString("guidance_tip", "")
+                    val comment = resultJson.optString("comment", "评估完成")
+                    val suggestedMinutes = resultJson.optInt("suggested_minutes", resultJson.optInt("suggestedMinutes", 15)).coerceIn(1, 480)
+
+                    val decision = when (decisionStr.uppercase()) {
+                        "ALLOW", "APPROVE" -> DecisionType.ALLOW
+                        "RETRY", "ASK" -> DecisionType.RETRY
+                        "DENY", "REJECT" -> DecisionType.DENY
+                        else -> if (resultJson.optBoolean("approved", false)) DecisionType.ALLOW else DecisionType.DENY
+                    }
+
+                    val reasonType = when (reasonTypeStr.uppercase()) {
+                        "SPECIFIC_PURPOSE" -> ReasonType.SPECIFIC_PURPOSE
+                        "VAGUE_PURPOSE" -> ReasonType.VAGUE_PURPOSE
+                        "IMPULSIVE_USE" -> ReasonType.IMPULSIVE_USE
+                        "HABITUAL_USE" -> ReasonType.HABITUAL_USE
+                        "APP_MISMATCH" -> ReasonType.APP_MISMATCH
+                        else -> if (decision == DecisionType.ALLOW) ReasonType.SPECIFIC_PURPOSE else ReasonType.OTHER
+                    }
+
                     return@withContext EvaluationResult(
-                        decision = DecisionType.DENY,
-                        reasonType = ReasonType.OTHER,
-                        comment = "云端 API 请求异常 (${response.code})：$errorDetail",
-                        rawResponse = responseBodyStr,
+                        decision = decision,
+                        reasonType = reasonType,
+                        suggestedMinutes = suggestedMinutes,
+                        guidanceTip = guidanceTip,
+                        comment = comment,
+                        rawResponse = cleanJsonStr,
                         latencyMs = latency
                     )
                 }
-
-                val responseJson = JSONObject(responseBodyStr)
-                val choices = responseJson.optJSONArray("choices")
-                if (choices == null || choices.length() == 0) {
+            } catch (e: Exception) {
+                Log.w(TAG, "Cloud API evaluateConversation attempt $attempt failed: ${e.message}")
+                if (attempt < 1) {
+                    delay(1000)
+                } else {
+                    val latency = System.currentTimeMillis() - startTime
+                    Log.e(TAG, "Cloud API network execution exception", e)
                     return@withContext EvaluationResult(
                         decision = DecisionType.DENY,
                         reasonType = ReasonType.OTHER,
-                        comment = "云端大模型返回内容为空，请检查模型名称是否正确。",
-                        rawResponse = responseBodyStr,
+                        comment = "连接云端 API 失败：${e.localizedMessage ?: "网络超时"}，请检查网络连接或 API Base URL 设置。",
+                        rawResponse = "{\"error\": \"${e.message}\"}",
                         latencyMs = latency
                     )
                 }
-
-                val messageObj = choices.getJSONObject(0).optJSONObject("message")
-                val contentStr = messageObj?.optString("content") ?: ""
-                val cleanJsonStr = extractJsonString(contentStr)
-
-                val resultJson = JSONObject(cleanJsonStr)
-                val decisionStr = resultJson.optString("decision", resultJson.optString("action", ""))
-                val reasonTypeStr = resultJson.optString("reason_type", "")
-                val guidanceTip = resultJson.optString("guidance_tip", "")
-                val comment = resultJson.optString("comment", "评估完成")
-
-                val decision = when (decisionStr.uppercase()) {
-                    "ALLOW", "APPROVE" -> DecisionType.ALLOW
-                    "RETRY", "ASK" -> DecisionType.RETRY
-                    "DENY", "REJECT" -> DecisionType.DENY
-                    else -> if (resultJson.optBoolean("approved", false)) DecisionType.ALLOW else DecisionType.DENY
-                }
-
-                val reasonType = when (reasonTypeStr.uppercase()) {
-                    "SPECIFIC_PURPOSE" -> ReasonType.SPECIFIC_PURPOSE
-                    "VAGUE_PURPOSE" -> ReasonType.VAGUE_PURPOSE
-                    "IMPULSIVE_USE" -> ReasonType.IMPULSIVE_USE
-                    "HABITUAL_USE" -> ReasonType.HABITUAL_USE
-                    "APP_MISMATCH" -> ReasonType.APP_MISMATCH
-                    else -> if (decision == DecisionType.ALLOW) ReasonType.SPECIFIC_PURPOSE else ReasonType.OTHER
-                }
-
-                EvaluationResult(
-                    decision = decision,
-                    reasonType = reasonType,
-                    guidanceTip = guidanceTip,
-                    comment = comment,
-                    rawResponse = cleanJsonStr,
-                    latencyMs = latency
-                )
             }
-        } catch (e: Exception) {
-            val latency = System.currentTimeMillis() - startTime
-            Log.e(TAG, "Cloud API network execution exception", e)
-            EvaluationResult(
-                decision = DecisionType.DENY,
-                reasonType = ReasonType.OTHER,
-                comment = "连接云端 API 失败：${e.localizedMessage ?: "网络超时"}，请检查网络连接或 API Base URL 设置。",
-                rawResponse = "{\"error\": \"${e.message}\"}",
-                latencyMs = latency
-            )
         }
+
+        EvaluationResult(
+            decision = DecisionType.DENY,
+            reasonType = ReasonType.OTHER,
+            comment = "请求未完成",
+            rawResponse = "{}",
+            latencyMs = 0L
+        )
     }
 
     /**
@@ -224,7 +247,6 @@ $dynamicAppContext
             put("messages", messagesArray)
             put("enable_thinking", true)
             put("preserve_thinking", true)
-            put("max_completion_tokens", 600)
             put("temperature", 0.7)
             put("stream", false)
         }
@@ -237,28 +259,45 @@ $dynamicAppContext
             .post(requestBody)
             .build()
 
-        try {
-            httpClient.newCall(request).execute().use { response ->
-                val responseBodyStr = response.body?.string() ?: ""
-                if (!response.isSuccessful) {
-                    val errorDetail = parseErrorMessage(responseBodyStr, response.code)
-                    return@withContext "云端 API 请求异常 (${response.code})：$errorDetail"
-                }
+        for (attempt in 0..1) {
+            try {
+                httpClient.newCall(request).execute().use { response ->
+                    val responseBodyStr = response.body?.string() ?: ""
+                    if (!response.isSuccessful) {
+                        val errorDetail = parseErrorMessage(responseBodyStr, response.code)
+                        return@withContext "云端 API 请求异常 (${response.code})：$errorDetail"
+                    }
 
-                val responseJson = JSONObject(responseBodyStr)
-                val choices = responseJson.optJSONArray("choices")
-                if (choices == null || choices.length() == 0) {
-                    return@withContext "云端大模型返回内容为空，请检查模型名称与网络配置。"
-                }
+                    val responseJson = JSONObject(responseBodyStr)
+                    val choices = responseJson.optJSONArray("choices")
+                    if (choices == null || choices.length() == 0) {
+                        return@withContext "云端大模型返回内容为空，请检查模型名称与网络配置。"
+                    }
 
-                val messageObj = choices.getJSONObject(0).optJSONObject("message")
-                val contentStr = messageObj?.optString("content") ?: ""
-                contentStr.ifBlank { "本周期自律表现稳健，继续保持！" }
+                    val messageObj = choices.getJSONObject(0).optJSONObject("message")
+                    val contentStr = messageObj?.optString("content") ?: ""
+                    if (contentStr.isNotBlank()) {
+                        return@withContext contentStr
+                    } else {
+                        val reasoningContent = messageObj?.optString("reasoning_content") ?: ""
+                        if (reasoningContent.isNotBlank()) {
+                            return@withContext reasoningContent
+                        } else {
+                            return@withContext "云端大模型返回内容为空，请检查模型配置与网络连接。"
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Cloud API generateLongReport attempt $attempt failed: ${e.message}")
+                if (attempt < 1) {
+                    delay(1000)
+                } else {
+                    Log.e(TAG, "Cloud API generateLongReport exception", e)
+                    return@withContext "生成报告失败：${e.localizedMessage ?: "网络超时"}，请检查网络连接或 API 设置。"
+                }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Cloud API generateLongReport exception", e)
-            "生成报告失败：${e.localizedMessage ?: "网络超时"}，请检查网络连接或 API 设置。"
         }
+        "生成报告失败：重试后依然超时，请检查网络连接。"
     }
 
     override suspend fun evaluateReason(
@@ -291,13 +330,19 @@ $dynamicAppContext
     }
 
     private fun extractJsonString(raw: String): String {
-        val trimmed = raw.trim()
-        val jsonStart = trimmed.indexOf('{')
-        val jsonEnd = trimmed.lastIndexOf('}')
+        var clean = raw.trim()
+        if (clean.startsWith("```")) {
+            clean = clean.removePrefix("```json").removePrefix("```").trim()
+            if (clean.endsWith("```")) {
+                clean = clean.removeSuffix("```").trim()
+            }
+        }
+        val jsonStart = clean.indexOf('{')
+        val jsonEnd = clean.lastIndexOf('}')
         return if (jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart) {
-            trimmed.substring(jsonStart, jsonEnd + 1)
+            clean.substring(jsonStart, jsonEnd + 1)
         } else {
-            trimmed
+            clean
         }
     }
 

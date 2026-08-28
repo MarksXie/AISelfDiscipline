@@ -518,12 +518,125 @@ private fun StatsReportTabContent(
                     Spacer(modifier = Modifier.height(14.dp))
 
                     if (currentReport != null) {
-                        Text(
-                            text = currentReport.aiEvaluation,
-                            fontSize = 13.sp,
-                            color = Color(0xFFECEFF1),
-                            lineHeight = 20.sp
-                        )
+                        val detail = currentReport.evaluationDetail
+                        val isStructured = detail.summary.isNotEmpty() || detail.good.isNotEmpty() || detail.problem.isNotEmpty() || detail.suggestion.isNotEmpty()
+
+                        if (isStructured) {
+                            // 1. 评分与总体评价栏
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFF0E111C), RoundedCornerShape(12.dp))
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .background(
+                                            when {
+                                                detail.score >= 80 -> Color(0x3300E676)
+                                                detail.score >= 60 -> Color(0x3300E5FF)
+                                                else -> Color(0x33FF5252)
+                                            },
+                                            CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "${detail.score}",
+                                        fontSize = 17.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = when {
+                                            detail.score >= 80 -> Color(0xFF00E676)
+                                            detail.score >= 60 -> Color(0xFF00E5FF)
+                                            else -> Color(0xFFFF5252)
+                                        }
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "自律得分：${detail.score}分 • 综合复盘",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF90A4AE)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        detail.summary.forEachIndexed { index, sumItem ->
+                                            val cleanText = sumItem
+                                                .replaceFirst(Regex("^[0-9]+[.\\u3001\\s、]+"), "")
+                                                .replaceFirst(Regex("^[-*•]\\s*"), "")
+                                                .trim()
+                                            Row(verticalAlignment = Alignment.Top) {
+                                                Text(
+                                                    text = "•",
+                                                    color = Color(0xFF00E5FF),
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(
+                                                    text = cleanText,
+                                                    fontSize = 12.sp,
+                                                    fontWeight = FontWeight.Medium,
+                                                    color = Color.White,
+                                                    lineHeight = 17.sp
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            // 2. 执行亮点 (分点)
+                            BulletedSectionCard(
+                                icon = "🌟",
+                                title = "执行亮点",
+                                titleColor = Color(0xFF00E676),
+                                bgColor = Color(0x1500E676),
+                                bulletColor = Color(0xFF00E676),
+                                items = detail.good
+                            )
+
+                            if (detail.good.isNotEmpty() && (detail.problem.isNotEmpty() || detail.suggestion.isNotEmpty())) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            // 3. 关注问题 (分点)
+                            BulletedSectionCard(
+                                icon = "⚠️",
+                                title = "值得关注",
+                                titleColor = Color(0xFFFFB300),
+                                bgColor = Color(0x15FFB300),
+                                bulletColor = Color(0xFFFFB300),
+                                items = detail.problem
+                            )
+
+                            if (detail.problem.isNotEmpty() && detail.suggestion.isNotEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            // 4. 改进建议 (分点)
+                            BulletedSectionCard(
+                                icon = "💡",
+                                title = "改进建议",
+                                titleColor = Color(0xFF00E5FF),
+                                bgColor = Color(0x1500E5FF),
+                                bulletColor = Color(0xFF00E5FF),
+                                items = detail.suggestion
+                            )
+                        } else {
+                            Text(
+                                text = currentReport.aiEvaluation,
+                                fontSize = 13.sp,
+                                color = Color(0xFFECEFF1),
+                                lineHeight = 20.sp
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(12.dp))
                         val genTimeStr = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
@@ -1054,6 +1167,72 @@ private fun HistoryItemCard(record: ApprovalRecord) {
                         fontSize = 11.sp,
                         color = Color(0xFF00E5FF)
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BulletedSectionCard(
+    icon: String,
+    title: String,
+    titleColor: Color,
+    bgColor: Color,
+    bulletColor: Color,
+    items: List<String>
+) {
+    if (items.isEmpty()) return
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bgColor, RoundedCornerShape(12.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(text = icon, fontSize = 14.sp)
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = titleColor
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                items.forEachIndexed { index, itemText ->
+                    val cleanText = itemText
+                        .replaceFirst(Regex("^[0-9]+[.\\u3001\\s、]+"), "")
+                        .replaceFirst(Regex("^[-*•]\\s*"), "")
+                        .trim()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .padding(top = 2.dp)
+                                .size(16.dp)
+                                .background(bulletColor.copy(alpha = 0.2f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "${index + 1}",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = bulletColor
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = cleanText,
+                            fontSize = 12.sp,
+                            color = Color(0xFFECEFF1),
+                            lineHeight = 17.sp
+                        )
+                    }
                 }
             }
         }

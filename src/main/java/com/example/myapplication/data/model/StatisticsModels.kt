@@ -89,17 +89,82 @@ data class HardStats(
     }
 }
 
+// 结构化自律复盘评价详情
+data class StatsEvaluationDetail(
+    val score: Int = 85,
+    val summary: List<String> = emptyList(),
+    val good: List<String> = emptyList(),
+    val problem: List<String> = emptyList(),
+    val suggestion: List<String> = emptyList()
+) {
+    fun toJson(): JSONObject = JSONObject().apply {
+        put("score", score)
+        put("summary", JSONArray(summary))
+        put("good", JSONArray(good))
+        put("problem", JSONArray(problem))
+        put("suggestion", JSONArray(suggestion))
+    }
+
+    companion object {
+        private fun parseStringList(json: JSONObject, key: String): List<String> {
+            val arr = json.optJSONArray(key)
+            if (arr != null) {
+                val list = mutableListOf<String>()
+                for (i in 0 until arr.length()) {
+                    val s = arr.optString(i, "").trim()
+                    if (s.isNotBlank()) list.add(s)
+                }
+                if (list.isNotEmpty()) return list
+            }
+            val str = json.optString(key, "").trim()
+            if (str.isNotBlank()) {
+                return str.lines().map { it.trim() }.filter { it.isNotBlank() }
+            }
+            return emptyList()
+        }
+
+        fun fromJson(json: JSONObject) = StatsEvaluationDetail(
+            score = json.optInt("score", 85).coerceIn(0, 100),
+            summary = parseStringList(json, "summary"),
+            good = parseStringList(json, "good"),
+            problem = parseStringList(json, "problem"),
+            suggestion = parseStringList(json, "suggestion")
+        )
+
+        fun fromRawText(raw: String): StatsEvaluationDetail {
+            try {
+                var clean = raw.trim()
+                if (clean.startsWith("```")) {
+                    clean = clean.removePrefix("```json").removePrefix("```").trim()
+                    if (clean.endsWith("```")) clean = clean.removeSuffix("```").trim()
+                }
+                val start = clean.indexOf('{')
+                val end = clean.lastIndexOf('}')
+                if (start != -1 && end != -1 && end > start) {
+                    val json = JSONObject(clean.substring(start, end + 1))
+                    return fromJson(json)
+                }
+            } catch (_: Exception) {
+            }
+            return StatsEvaluationDetail(summary = if (raw.isNotBlank()) listOf(raw) else emptyList())
+        }
+    }
+}
+
 // AI 生成的统计报告（持久化存储单元）
 data class StatsReport(
     val periodType: String,         // StatsPeriodType.id
     val periodKey: String,          // 唯一键，例如 "day_2026-08-28", "week_2026-W35", "year_2026"
     val periodLabel: String,        // 显示文本，例如 "2026.08.28", "2026 第35周"
     val generatedAt: Long = System.currentTimeMillis(),
-    val aiEvaluation: String,       // AI 深度评价与建议
+    val aiEvaluation: String,       // AI 深度评价与建议 (支持结构化 JSON 字符串)
     val hardStats: HardStats,       // 该周期的硬统计指标快照
     val isError: Boolean = false,
     val errorMessage: String = ""
 ) {
+    val evaluationDetail: StatsEvaluationDetail
+        get() = StatsEvaluationDetail.fromRawText(aiEvaluation)
+
     fun toJson(): JSONObject = JSONObject().apply {
         put("periodType", periodType)
         put("periodKey", periodKey)

@@ -548,9 +548,11 @@ fun InterceptOverlayContent(
 
                                 Spacer(modifier = Modifier.height(12.dp))
 
+                                val aiMinutes = (currentResult?.suggestedMinutes ?: 15).coerceIn(1, 480)
                                 // 罗盘放行选择器
                                 DurationDialPicker(
-                                    initialMinutes = 15,
+                                    initialMinutes = aiMinutes,
+                                    aiSuggestedMinutes = aiMinutes,
                                     onConfirm = { minutes ->
                                         currentResult?.let { record ->
                                             onConfirmPass(getFullConversationSummary(), minutes, record)
