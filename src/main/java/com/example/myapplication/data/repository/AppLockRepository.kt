@@ -17,9 +17,9 @@ import com.example.myapplication.data.model.AppInfo
 import com.example.myapplication.data.model.AppRuleProfile
 import com.example.myapplication.data.model.ApprovalRecord
 import com.example.myapplication.data.model.CloudProviderConfig
-import com.example.myapplication.data.model.CloudProviderPreset
 import com.example.myapplication.data.model.PersonaProfile
 import com.example.myapplication.data.model.PersonaType
+import com.example.myapplication.data.model.StatsReport
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -42,24 +42,40 @@ class AppLockRepository(private val context: Context) {
         private val KEY_HISTORY_JSON = stringPreferencesKey("history_records_json")
         private val KEY_APP_RULES_JSON = stringPreferencesKey("app_rules_json")
 
-        // 云端大模型相关配置键
+        // 审查官云端大模型配置键（正式与测试环境物理隔离）
         private val KEY_ENGINE_TYPE = stringPreferencesKey("ai_engine_type")
-        private val KEY_CLOUD_PROVIDER = stringPreferencesKey("cloud_provider_preset")
-        private val KEY_CLOUD_CONFIGS_MAP_JSON = stringPreferencesKey("cloud_configs_map_json")
+        private val KEY_CLOUD_CONFIG_JSON = stringPreferencesKey("cloud_config_json")
+        private val KEY_TEST_CLOUD_CONFIG_JSON = stringPreferencesKey("test_cloud_config_json")
+
+        // 统计专属独立 AI 引擎配置键（正式与测试环境物理隔离）
+        private val KEY_STATS_ENGINE_TYPE = stringPreferencesKey("stats_engine_type")
+        private val KEY_STATS_CLOUD_CONFIG_JSON = stringPreferencesKey("stats_cloud_config_json")
+        private val KEY_TEST_STATS_CLOUD_CONFIG_JSON = stringPreferencesKey("test_stats_cloud_config_json")
+
+        // 统计报告持久化缓存键 (JSON Map: periodKey -> StatsReport JSON)
+        private val KEY_STATS_REPORTS_CACHE_JSON = stringPreferencesKey("stats_reports_cache_json")
+
+        // 审批明细前端隐藏过滤时间戳 (0 表示不隐藏，>0 仅展示此时间戳之后的记录)
+        private val KEY_HISTORY_CLEAR_TIMESTAMP = stringPreferencesKey("history_clear_timestamp")
+
+        // 开发者测试模式开关
+        private val KEY_TEST_MODE_ENABLED = booleanPreferencesKey("test_mode_enabled")
     }
 
     val isProtectionEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
         prefs[KEY_PROTECTION_ENABLED] ?: true
     }
 
-    val blacklistedPackages: Flow<Set<String>> = context.dataStore.data.map { prefs ->
-        prefs[KEY_BLACKLIST] ?: emptySet()
+    val isTestModeEnabled: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_TEST_MODE_ENABLED] ?: false
     }
 
-    // 自定义审查官人格列表
-    val customPersonas: Flow<List<PersonaProfile>> = context.dataStore.data.map { prefs ->
-        val jsonStr = prefs[KEY_CUSTOM_PERSONAS_JSON] ?: "[]"
-        parseCustomPersonasJson(jsonStr)
+    val historyClearTimestamp: Flow<Long> = context.dataStore.data.map { prefs ->
+        prefs[KEY_HISTORY_CLEAR_TIMESTAMP]?.toLongOrNull() ?: 0L
+    }
+
+    val blacklistedPackages: Flow<Set<String>> = context.dataStore.data.map { prefs ->
+        prefs[KEY_BLACKLIST] ?: emptySet()
     }
 
     // 全部可用审查官人格列表（4个内置 + 用户自定义）
@@ -90,34 +106,114 @@ class AppLockRepository(private val context: Context) {
         prefs[KEY_MODEL_PATH] ?: "/sdcard/Download/qwen2.5-3b-instruct-q4_k_m.gguf"
     }
 
-    // 引擎模式：默认 CLOUD（推荐）
+    // 审批引擎模式：默认 CLOUD
     val engineType: Flow<AIEngineType> = context.dataStore.data.map { prefs ->
         val id = prefs[KEY_ENGINE_TYPE] ?: AIEngineType.CLOUD.id
         AIEngineType.fromId(id)
     }
 
-    // 各服务商配置字典
-    val cloudConfigsMap: Flow<Map<String, CloudProviderConfig>> = context.dataStore.data.map { prefs ->
-        parseCloudConfigsMap(prefs[KEY_CLOUD_CONFIGS_MAP_JSON] ?: "{}")
+    // 审查官正式环境云端配置
+    val productionCloudConfig: Flow<CloudProviderConfig> = context.dataStore.data.map { prefs ->
+        val jsonStr = prefs[KEY_CLOUD_CONFIG_JSON]
+        if (jsonStr.isNullOrBlank()) {
+            CloudProviderConfig.DEFAULT
+        } else {
+            try {
+                CloudProviderConfig.fromJson(JSONObject(jsonStr))
+            } catch (e: Exception) {
+                CloudProviderConfig.DEFAULT
+            }
+        }
     }
 
-    // 当前激活的服务商预设
-    val cloudProvider: Flow<CloudProviderPreset> = context.dataStore.data.map { prefs ->
-        val id = prefs[KEY_CLOUD_PROVIDER] ?: CloudProviderPreset.DEEPSEEK.id
-        CloudProviderPreset.fromId(id)
+    // 审查官测试环境云端配置
+    val testCloudConfig: Flow<CloudProviderConfig> = context.dataStore.data.map { prefs ->
+        val jsonStr = prefs[KEY_TEST_CLOUD_CONFIG_JSON]
+        if (jsonStr.isNullOrBlank()) {
+            CloudProviderConfig.DEFAULT
+        } else {
+            try {
+                CloudProviderConfig.fromJson(JSONObject(jsonStr))
+            } catch (e: Exception) {
+                CloudProviderConfig.DEFAULT
+            }
+        }
     }
 
-    // 当前激活服务商的完整独立配置
+    // 审查官当前根据测试模式动态生效的云端配置
     val activeCloudConfig: Flow<CloudProviderConfig> = context.dataStore.data.map { prefs ->
-        val providerId = prefs[KEY_CLOUD_PROVIDER] ?: CloudProviderPreset.DEEPSEEK.id
-        val preset = CloudProviderPreset.fromId(providerId)
-        val map = parseCloudConfigsMap(prefs[KEY_CLOUD_CONFIGS_MAP_JSON] ?: "{}")
-        map[providerId] ?: CloudProviderConfig.getDefault(preset)
+        val isTest = prefs[KEY_TEST_MODE_ENABLED] ?: false
+        val jsonKey = if (isTest) KEY_TEST_CLOUD_CONFIG_JSON else KEY_CLOUD_CONFIG_JSON
+        val jsonStr = prefs[jsonKey]
+        if (jsonStr.isNullOrBlank()) {
+            CloudProviderConfig.DEFAULT
+        } else {
+            try {
+                CloudProviderConfig.fromJson(JSONObject(jsonStr))
+            } catch (e: Exception) {
+                CloudProviderConfig.DEFAULT
+            }
+        }
     }
 
     val cloudApiKey: Flow<String> = activeCloudConfig.map { it.apiKey }
-    val cloudBaseUrl: Flow<String> = activeCloudConfig.map { it.baseUrl.ifBlank { CloudProviderPreset.fromId(it.providerId).defaultBaseUrl } }
-    val cloudModelName: Flow<String> = activeCloudConfig.map { it.modelName.ifBlank { CloudProviderPreset.fromId(it.providerId).defaultModel } }
+    val cloudBaseUrl: Flow<String> = activeCloudConfig.map { it.baseUrl }
+    val cloudModelName: Flow<String> = activeCloudConfig.map { it.modelName }
+
+    // ==================== 统计专属独立 AI 引擎 Flows ====================
+    val statsEngineType: Flow<AIEngineType> = context.dataStore.data.map { prefs ->
+        val id = prefs[KEY_STATS_ENGINE_TYPE] ?: AIEngineType.CLOUD.id
+        AIEngineType.fromId(id)
+    }
+
+    // 统计正式环境云端配置（专供 WorkManager 定时报告）
+    val productionStatsCloudConfig: Flow<CloudProviderConfig> = context.dataStore.data.map { prefs ->
+        val jsonStr = prefs[KEY_STATS_CLOUD_CONFIG_JSON]
+        if (jsonStr.isNullOrBlank()) {
+            CloudProviderConfig.DEFAULT
+        } else {
+            try {
+                CloudProviderConfig.fromJson(JSONObject(jsonStr))
+            } catch (e: Exception) {
+                CloudProviderConfig.DEFAULT
+            }
+        }
+    }
+
+    // 统计测试环境云端配置
+    val testStatsCloudConfig: Flow<CloudProviderConfig> = context.dataStore.data.map { prefs ->
+        val jsonStr = prefs[KEY_TEST_STATS_CLOUD_CONFIG_JSON]
+        if (jsonStr.isNullOrBlank()) {
+            CloudProviderConfig.DEFAULT
+        } else {
+            try {
+                CloudProviderConfig.fromJson(JSONObject(jsonStr))
+            } catch (e: Exception) {
+                CloudProviderConfig.DEFAULT
+            }
+        }
+    }
+
+    // 统计当前根据测试模式动态生效的云端配置
+    val statsActiveCloudConfig: Flow<CloudProviderConfig> = context.dataStore.data.map { prefs ->
+        val isTest = prefs[KEY_TEST_MODE_ENABLED] ?: false
+        val jsonKey = if (isTest) KEY_TEST_STATS_CLOUD_CONFIG_JSON else KEY_STATS_CLOUD_CONFIG_JSON
+        val jsonStr = prefs[jsonKey]
+        if (jsonStr.isNullOrBlank()) {
+            CloudProviderConfig.DEFAULT
+        } else {
+            try {
+                CloudProviderConfig.fromJson(JSONObject(jsonStr))
+            } catch (e: Exception) {
+                CloudProviderConfig.DEFAULT
+            }
+        }
+    }
+
+    // 统计报告缓存字典 Flow
+    val statsReportsCache: Flow<Map<String, StatsReport>> = context.dataStore.data.map { prefs ->
+        parseStatsReportsCacheJson(prefs[KEY_STATS_REPORTS_CACHE_JSON] ?: "{}")
+    }
 
     val historyRecords: Flow<List<ApprovalRecord>> = context.dataStore.data.map { prefs ->
         val jsonStr = prefs[KEY_HISTORY_JSON] ?: "[]"
@@ -171,37 +267,38 @@ class AppLockRepository(private val context: Context) {
         }
     }
 
-    suspend fun setPersona(persona: PersonaType) {
+    suspend fun savePersona(persona: PersonaProfile) {
         context.dataStore.edit { prefs ->
-            prefs[KEY_PERSONA] = persona.id
+            val list = parseCustomPersonasJson(prefs[KEY_CUSTOM_PERSONAS_JSON] ?: "[]").toMutableList()
+            val existingIndex = list.indexOfFirst { it.id == persona.id }
+            if (existingIndex >= 0) {
+                list[existingIndex] = persona
+            } else {
+                list.add(persona)
+            }
+            prefs[KEY_CUSTOM_PERSONAS_JSON] = serializeCustomPersonasJson(list)
         }
     }
 
-    suspend fun setActivePersonaId(personaId: String) {
+    suspend fun saveCustomPersona(profile: PersonaProfile) {
+        savePersona(profile)
+    }
+
+    suspend fun setActivePersona(personaId: String) {
         context.dataStore.edit { prefs ->
             prefs[KEY_PERSONA] = personaId
         }
     }
 
-    suspend fun saveCustomPersona(profile: PersonaProfile) {
-        context.dataStore.edit { prefs ->
-            val currentList = parseCustomPersonasJson(prefs[KEY_CUSTOM_PERSONAS_JSON] ?: "[]").toMutableList()
-            val index = currentList.indexOfFirst { it.id == profile.id }
-            if (index != -1) {
-                currentList[index] = profile
-            } else {
-                currentList.add(profile)
-            }
-            prefs[KEY_CUSTOM_PERSONAS_JSON] = serializeCustomPersonasJson(currentList)
-            prefs[KEY_PERSONA] = profile.id
-        }
+    suspend fun setActivePersonaId(personaId: String) {
+        setActivePersona(personaId)
     }
 
     suspend fun deleteCustomPersona(personaId: String) {
         context.dataStore.edit { prefs ->
-            val currentList = parseCustomPersonasJson(prefs[KEY_CUSTOM_PERSONAS_JSON] ?: "[]").toMutableList()
-            currentList.removeAll { it.id == personaId }
-            prefs[KEY_CUSTOM_PERSONAS_JSON] = serializeCustomPersonasJson(currentList)
+            val list = parseCustomPersonasJson(prefs[KEY_CUSTOM_PERSONAS_JSON] ?: "[]").toMutableList()
+            list.removeAll { it.id == personaId }
+            prefs[KEY_CUSTOM_PERSONAS_JSON] = serializeCustomPersonasJson(list)
 
             val activeId = prefs[KEY_PERSONA]
             if (activeId == personaId) {
@@ -216,43 +313,34 @@ class AppLockRepository(private val context: Context) {
         }
     }
 
-    suspend fun setActiveCloudProvider(provider: CloudProviderPreset) {
-        context.dataStore.edit { prefs ->
-            prefs[KEY_CLOUD_PROVIDER] = provider.id
-        }
-    }
-
     suspend fun saveCloudConfig(
-        provider: CloudProviderPreset,
-        apiKey: String,
-        baseUrl: String,
-        modelName: String,
-        enableThinking: Boolean = false,
-        thinkingParamKey: String = provider.defaultThinkingKey
-    ) {
-        context.dataStore.edit { prefs ->
-            val map = parseCloudConfigsMap(prefs[KEY_CLOUD_CONFIGS_MAP_JSON] ?: "{}").toMutableMap()
-            map[provider.id] = CloudProviderConfig(
-                providerId = provider.id,
-                apiKey = apiKey.trim(),
-                baseUrl = baseUrl.trim().ifBlank { provider.defaultBaseUrl },
-                modelName = modelName.trim().ifBlank { provider.defaultModel },
-                enableThinking = enableThinking,
-                thinkingParamKey = thinkingParamKey.trim().ifBlank { provider.defaultThinkingKey }
-            )
-            prefs[KEY_CLOUD_CONFIGS_MAP_JSON] = serializeCloudConfigsMap(map)
-            prefs[KEY_CLOUD_PROVIDER] = provider.id
-        }
-    }
-
-    // 兼容老调用
-    suspend fun setCloudConfig(
-        provider: CloudProviderPreset,
         apiKey: String,
         baseUrl: String,
         modelName: String
     ) {
-        saveCloudConfig(provider, apiKey, baseUrl, modelName)
+        context.dataStore.edit { prefs ->
+            val config = CloudProviderConfig(
+                apiKey = apiKey.trim(),
+                baseUrl = baseUrl.trim().ifBlank { CloudProviderConfig.DEFAULT_BASE_URL },
+                modelName = modelName.trim().ifBlank { CloudProviderConfig.DEFAULT_MODEL_NAME }
+            )
+            prefs[KEY_CLOUD_CONFIG_JSON] = config.toJson().toString()
+        }
+    }
+
+    suspend fun saveTestCloudConfig(
+        apiKey: String,
+        baseUrl: String,
+        modelName: String
+    ) {
+        context.dataStore.edit { prefs ->
+            val config = CloudProviderConfig(
+                apiKey = apiKey.trim(),
+                baseUrl = baseUrl.trim().ifBlank { CloudProviderConfig.DEFAULT_BASE_URL },
+                modelName = modelName.trim().ifBlank { CloudProviderConfig.DEFAULT_MODEL_NAME }
+            )
+            prefs[KEY_TEST_CLOUD_CONFIG_JSON] = config.toJson().toString()
+        }
     }
 
     suspend fun setCustomPrompt(prompt: String) {
@@ -267,21 +355,92 @@ class AppLockRepository(private val context: Context) {
         }
     }
 
+    suspend fun setTestModeEnabled(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_TEST_MODE_ENABLED] = enabled
+        }
+    }
+
+    suspend fun setStatsEngineType(engineType: AIEngineType) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_STATS_ENGINE_TYPE] = engineType.id
+        }
+    }
+
+    suspend fun saveStatsCloudConfig(
+        apiKey: String,
+        baseUrl: String,
+        modelName: String
+    ) {
+        context.dataStore.edit { prefs ->
+            val config = CloudProviderConfig(
+                apiKey = apiKey.trim(),
+                baseUrl = baseUrl.trim().ifBlank { CloudProviderConfig.DEFAULT_BASE_URL },
+                modelName = modelName.trim().ifBlank { CloudProviderConfig.DEFAULT_MODEL_NAME }
+            )
+            prefs[KEY_STATS_CLOUD_CONFIG_JSON] = config.toJson().toString()
+        }
+    }
+
+    suspend fun saveTestStatsCloudConfig(
+        apiKey: String,
+        baseUrl: String,
+        modelName: String
+    ) {
+        context.dataStore.edit { prefs ->
+            val config = CloudProviderConfig(
+                apiKey = apiKey.trim(),
+                baseUrl = baseUrl.trim().ifBlank { CloudProviderConfig.DEFAULT_BASE_URL },
+                modelName = modelName.trim().ifBlank { CloudProviderConfig.DEFAULT_MODEL_NAME }
+            )
+            prefs[KEY_TEST_STATS_CLOUD_CONFIG_JSON] = config.toJson().toString()
+        }
+    }
+
+    suspend fun saveStatsReport(report: StatsReport) {
+        context.dataStore.edit { prefs ->
+            val map = parseStatsReportsCacheJson(prefs[KEY_STATS_REPORTS_CACHE_JSON] ?: "{}").toMutableMap()
+            map[report.periodKey] = report
+            prefs[KEY_STATS_REPORTS_CACHE_JSON] = serializeStatsReportsCacheJson(map)
+        }
+    }
+
+    suspend fun getStatsReport(periodKey: String): StatsReport? {
+        val prefs = context.dataStore.data.first()
+        val map = parseStatsReportsCacheJson(prefs[KEY_STATS_REPORTS_CACHE_JSON] ?: "{}")
+        return map[periodKey]
+    }
+
     suspend fun addHistoryRecord(record: ApprovalRecord) {
         context.dataStore.edit { prefs ->
             val currentList = parseHistoryJson(prefs[KEY_HISTORY_JSON] ?: "[]").toMutableList()
             currentList.add(0, record)
-            if (currentList.size > 100) {
-                currentList.removeAt(currentList.lastIndex)
-            }
+            // 全量持久化保留，不限制 100 条上限，供 AI 统计长期回溯分析
             prefs[KEY_HISTORY_JSON] = serializeHistoryJson(currentList)
         }
     }
 
-    suspend fun clearHistory() {
+    /**
+     * 安全清理前端显示：记录当前时间戳，仅在界面隐藏早于此时间的记录，数据库数据完全保留
+     */
+    suspend fun clearHistoryDisplay() {
         context.dataStore.edit { prefs ->
-            prefs[KEY_HISTORY_JSON] = "[]"
+            prefs[KEY_HISTORY_CLEAR_TIMESTAMP] = System.currentTimeMillis().toString()
         }
+    }
+
+    /**
+     * 恢复显示全部历史记录
+     */
+    suspend fun resetHistoryDisplay() {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_HISTORY_CLEAR_TIMESTAMP] = "0"
+        }
+    }
+
+    // 兼容旧接口
+    suspend fun clearHistory() {
+        clearHistoryDisplay()
     }
 
     // App 专属自律规则获取
@@ -366,6 +525,30 @@ class AppLockRepository(private val context: Context) {
             .sortedWith(compareByDescending<AppInfo> { it.isBlocked }.thenBy { it.appName })
     }
 
+    private fun parseStatsReportsCacheJson(jsonStr: String): Map<String, StatsReport> {
+        return try {
+            val json = JSONObject(jsonStr)
+            val map = mutableMapOf<String, StatsReport>()
+            val keys = json.keys()
+            while (keys.hasNext()) {
+                val key = keys.next()
+                val obj = json.getJSONObject(key)
+                map[key] = StatsReport.fromJson(obj)
+            }
+            map
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    private fun serializeStatsReportsCacheJson(map: Map<String, StatsReport>): String {
+        val json = JSONObject()
+        map.forEach { (key, report) ->
+            json.put(key, report.toJson())
+        }
+        return json.toString()
+    }
+
     private fun parseCloudConfigsMap(jsonStr: String): Map<String, CloudProviderConfig> {
         return try {
             val json = JSONObject(jsonStr)
@@ -444,6 +627,7 @@ class AppLockRepository(private val context: Context) {
                 val obj = array.getJSONObject(i)
                 list.add(
                     ApprovalRecord(
+                        id = obj.optString("id", java.util.UUID.randomUUID().toString()),
                         packageName = obj.optString("packageName"),
                         appName = obj.optString("appName"),
                         reason = obj.optString("reason"),
@@ -464,6 +648,7 @@ class AppLockRepository(private val context: Context) {
         val array = JSONArray()
         records.forEach { record ->
             val obj = JSONObject().apply {
+                put("id", record.id)
                 put("packageName", record.packageName)
                 put("appName", record.appName)
                 put("reason", record.reason)

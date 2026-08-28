@@ -58,6 +58,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 
+import androidx.compose.material.icons.rounded.Analytics
+import com.example.myapplication.util.UsageStatsHelper
+
 @Composable
 fun PermissionGuideScreen() {
     val context = LocalContext.current
@@ -66,6 +69,7 @@ fun PermissionGuideScreen() {
     var hasAccessibility by remember { mutableStateOf(false) }
     var isIgnoringBattery by remember { mutableStateOf(false) }
     var hasAllFilesAccess by remember { mutableStateOf(false) }
+    var hasUsageStats by remember { mutableStateOf(false) }
 
     fun refreshStatus() {
         hasOverlay = Settings.canDrawOverlays(context)
@@ -81,6 +85,8 @@ fun PermissionGuideScreen() {
         } else {
             true
         }
+
+        hasUsageStats = UsageStatsHelper.hasUsageStatsPermission(context)
     }
 
     LaunchedEffect(Unit) {
@@ -178,7 +184,23 @@ fun PermissionGuideScreen() {
             )
         }
 
-        // 4. 电池优化白名单 (忽略省电优化)
+        // 4. 使用情况访问权限 (自律统计必需)
+        item {
+            PermissionItem(
+                title = "使用情况访问权限 (自律统计必需)",
+                desc = "用于精确获取各 App 的真实使用时长，为日/周/月/季/半年/年报提供系统数据",
+                icon = Icons.Rounded.Analytics,
+                isGranted = hasUsageStats,
+                onClick = {
+                    val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(intent)
+                }
+            )
+        }
+
+        // 5. 电池优化白名单 (忽略省电优化)
         item {
             PermissionItem(
                 title = "电池无限制 / 忽略省电优化",
@@ -194,7 +216,7 @@ fun PermissionGuideScreen() {
             )
         }
 
-        // 5. HyperOS 自启动与应用详情
+        // 6. HyperOS 自启动与应用详情
         item {
             PermissionItem(
                 title = "HyperOS 自启动与后台锁定",

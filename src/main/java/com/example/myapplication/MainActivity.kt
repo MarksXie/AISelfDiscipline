@@ -16,8 +16,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.AppBlocking
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Shield
@@ -44,9 +44,9 @@ import androidx.compose.ui.unit.sp
 import com.example.myapplication.service.KeepAliveForegroundService
 import com.example.myapplication.ui.screens.AISettingsScreen
 import com.example.myapplication.ui.screens.BlacklistScreen
-import com.example.myapplication.ui.screens.HistoryScreen
 import com.example.myapplication.ui.screens.HomeScreen
 import com.example.myapplication.ui.screens.PermissionGuideScreen
+import com.example.myapplication.ui.screens.StatisticsScreen
 import com.example.myapplication.ui.theme.DarkBg
 import com.example.myapplication.ui.theme.MyApplicationTheme
 
@@ -55,7 +55,7 @@ enum class MainDestination(val label: String) {
     BLACKLIST("受保护应用"),
     AI_SETTINGS("AI审查官"),
     PERMISSIONS("权限保活"),
-    HISTORY("自律周报");
+    HISTORY("自律统计");
 
     val icon: ImageVector
         get() = when (this) {
@@ -63,7 +63,7 @@ enum class MainDestination(val label: String) {
             BLACKLIST -> Icons.Rounded.AppBlocking
             AI_SETTINGS -> Icons.Rounded.Psychology
             PERMISSIONS -> Icons.Rounded.Security
-            HISTORY -> Icons.Rounded.History
+            HISTORY -> Icons.Rounded.Analytics
         }
 }
 
@@ -173,7 +173,7 @@ fun MainAppContainer() {
                     MainDestination.BLACKLIST -> BlacklistScreen()
                     MainDestination.AI_SETTINGS -> AISettingsScreen()
                     MainDestination.PERMISSIONS -> PermissionGuideScreen()
-                    MainDestination.HISTORY -> HistoryScreen()
+                    MainDestination.HISTORY -> StatisticsScreen()
                 }
             }
         }

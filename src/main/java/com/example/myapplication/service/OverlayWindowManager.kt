@@ -123,12 +123,9 @@ object OverlayWindowManager {
                                     val engineType = repository.engineType.first()
                                     val activeEngine: AIEngine = if (engineType == AIEngineType.CLOUD) {
                                         val cloudCfg = repository.activeCloudConfig.first()
-                                        val preset = com.example.myapplication.data.model.CloudProviderPreset.fromId(cloudCfg.providerId)
                                         cloudEngine.apiKey = cloudCfg.apiKey
-                                        cloudEngine.baseUrl = cloudCfg.baseUrl.ifBlank { preset.defaultBaseUrl }
-                                        cloudEngine.modelName = cloudCfg.modelName.ifBlank { preset.defaultModel }
-                                        cloudEngine.enableThinking = cloudCfg.enableThinking
-                                        cloudEngine.thinkingParamKey = cloudCfg.thinkingParamKey.ifBlank { preset.defaultThinkingKey }
+                                        cloudEngine.baseUrl = cloudCfg.baseUrl
+                                        cloudEngine.modelName = cloudCfg.modelName
                                         cloudEngine
                                     } else {
                                         localEngine
@@ -230,10 +227,9 @@ object OverlayWindowManager {
                     val engineType = repository.engineType.first()
                     if (engineType == AIEngineType.CLOUD) {
                         val cloudCfg = repository.activeCloudConfig.first()
-                        val preset = com.example.myapplication.data.model.CloudProviderPreset.fromId(cloudCfg.providerId)
                         cloudEngine.apiKey = cloudCfg.apiKey
-                        cloudEngine.baseUrl = cloudCfg.baseUrl.ifBlank { preset.defaultBaseUrl }
-                        cloudEngine.modelName = cloudCfg.modelName.ifBlank { preset.defaultModel }
+                        cloudEngine.baseUrl = cloudCfg.baseUrl
+                        cloudEngine.modelName = cloudCfg.modelName
                         isModelReady = cloudCfg.apiKey.isNotBlank()
                     } else {
                         val modelPath = repository.modelPath.first()

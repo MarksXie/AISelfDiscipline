@@ -73,103 +73,35 @@ enum class AIEngineType(
     }
 }
 
-enum class CloudProviderPreset(
-    val id: String,
-    val title: String,
-    val defaultBaseUrl: String,
-    val defaultModel: String,
-    val hint: String,
-    val defaultThinkingKey: String = "enable_thinking"
-) {
-    DEEPSEEK(
-        id = "deepseek",
-        title = "DeepSeek",
-        defaultBaseUrl = "https://api.deepseek.com",
-        defaultModel = "deepseek-chat",
-        hint = "极致性价比与超强中文推理，幽默一针见血",
-        defaultThinkingKey = "thinking"
-    ),
-    QWEN(
-        id = "qwen",
-        title = "通义千问 Qwen",
-        defaultBaseUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1",
-        defaultModel = "qwen-plus",
-        hint = "阿里云百炼大模型，稳定高效，响应极速",
-        defaultThinkingKey = "enable_thinking"
-    ),
-    SILICONFLOW(
-        id = "siliconflow",
-        title = "硅基流动",
-        defaultBaseUrl = "https://api.siliconflow.cn/v1",
-        defaultModel = "deepseek-ai/DeepSeek-V3",
-        hint = "国内主流高性能 API 聚合托管平台",
-        defaultThinkingKey = "enable_thinking"
-    ),
-    OPENAI(
-        id = "openai",
-        title = "OpenAI",
-        defaultBaseUrl = "https://api.openai.com/v1",
-        defaultModel = "gpt-4o-mini",
-        hint = "全球顶尖轻量大模型 GPT-4o-mini",
-        defaultThinkingKey = "enable_thinking"
-    ),
-    CUSTOM(
-        id = "custom",
-        title = "自定义 OpenAI 兼容",
-        defaultBaseUrl = "https://api.openai.com/v1",
-        defaultModel = "gpt-4o-mini",
-        hint = "支持任意自建 OneAPI、NewAPI 或第三方中转站",
-        defaultThinkingKey = "enable_thinking"
-    );
-
-    companion object {
-        fun fromId(id: String): CloudProviderPreset {
-            return entries.firstOrNull { it.id == id } ?: DEEPSEEK
-        }
-    }
-}
+data class ApiHealthResult(
+    val success: Boolean,
+    val latencyMs: Long = 0L,
+    val message: String
+)
 
 data class CloudProviderConfig(
-    val providerId: String,
     val apiKey: String = "",
-    val baseUrl: String = "",
-    val modelName: String = "",
-    val enableThinking: Boolean = false,
-    val thinkingParamKey: String = ""
+    val baseUrl: String = DEFAULT_BASE_URL,
+    val modelName: String = DEFAULT_MODEL_NAME
 ) {
     fun toJson(): JSONObject {
         return JSONObject().apply {
-            put("providerId", providerId)
             put("apiKey", apiKey)
             put("baseUrl", baseUrl)
             put("modelName", modelName)
-            put("enableThinking", enableThinking)
-            put("thinkingParamKey", thinkingParamKey)
         }
     }
 
     companion object {
-        fun fromJson(json: JSONObject): CloudProviderConfig {
-            val providerId = json.optString("providerId", "deepseek")
-            val preset = CloudProviderPreset.fromId(providerId)
-            return CloudProviderConfig(
-                providerId = providerId,
-                apiKey = json.optString("apiKey", ""),
-                baseUrl = json.optString("baseUrl", ""),
-                modelName = json.optString("modelName", ""),
-                enableThinking = json.optBoolean("enableThinking", false),
-                thinkingParamKey = json.optString("thinkingParamKey", preset.defaultThinkingKey)
-            )
-        }
+        const val DEFAULT_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+        const val DEFAULT_MODEL_NAME = "qwen3.8-flash"
+        val DEFAULT = CloudProviderConfig()
 
-        fun getDefault(preset: CloudProviderPreset): CloudProviderConfig {
+        fun fromJson(json: JSONObject): CloudProviderConfig {
             return CloudProviderConfig(
-                providerId = preset.id,
-                apiKey = "",
-                baseUrl = preset.defaultBaseUrl,
-                modelName = preset.defaultModel,
-                enableThinking = false,
-                thinkingParamKey = preset.defaultThinkingKey
+                apiKey = json.optString("apiKey", ""),
+                baseUrl = json.optString("baseUrl", DEFAULT_BASE_URL).ifBlank { DEFAULT_BASE_URL },
+                modelName = json.optString("modelName", DEFAULT_MODEL_NAME).ifBlank { DEFAULT_MODEL_NAME }
             )
         }
     }

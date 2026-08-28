@@ -20,9 +20,7 @@ import java.util.concurrent.TimeUnit
 class CloudOpenAIEngine(
     var apiKey: String = "",
     var baseUrl: String = "https://api.deepseek.com",
-    var modelName: String = "deepseek-chat",
-    var enableThinking: Boolean = false,
-    var thinkingParamKey: String = "enable_thinking"
+    var modelName: String = "deepseek-chat"
 ) : AIEngine {
 
     override val engineName: String
@@ -101,27 +99,15 @@ $dynamicAppContext
             })
         }
 
-        val isQwenOrDashScope = baseUrl.contains("dashscope", ignoreCase = true) ||
-                baseUrl.contains("aliyuncs", ignoreCase = true) ||
-                thinkingParamKey.trim() == "enable_thinking"
-
         val requestJson = JSONObject().apply {
             put("model", modelName.trim())
             put("messages", messagesArray)
-            put("temperature", 0.6)
+            put("enable_thinking", false)
+            put("preserve_thinking", false)
+            put("max_completion_tokens", 80)
+            put("temperature", 0.3)
+            put("stream", false)
             put("response_format", JSONObject().put("type", "json_object"))
-            if (enableThinking) {
-                val key = thinkingParamKey.trim().ifBlank { "enable_thinking" }
-                put(key, true)
-                if (isQwenOrDashScope) {
-                    put("preserve_thinking", false)
-                }
-            } else {
-                if (isQwenOrDashScope) {
-                    put("enable_thinking", false)
-                    put("reasoning_effort", "none")
-                }
-            }
         }
 
         val requestBody = requestJson.toString().toRequestBody(JSON_MEDIA_TYPE)
@@ -210,6 +196,71 @@ $dynamicAppContext
         }
     }
 
+    /**
+     * 生成长文本统计分析复盘报告（开启思考模式，字数控制在 800 字内）
+     */
+    suspend fun generateLongReport(
+        userPrompt: String,
+        systemPrompt: String
+    ): String = withContext(Dispatchers.IO) {
+        if (apiKey.isBlank()) {
+            return@withContext "云端 API Key 未配置，请前往【自律统计引擎设置】填写 API Key。"
+        }
+
+        val requestUrl = resolveChatCompletionsUrl(baseUrl)
+        val messagesArray = JSONArray().apply {
+            put(JSONObject().apply {
+                put("role", "system")
+                put("content", systemPrompt)
+            })
+            put(JSONObject().apply {
+                put("role", "user")
+                put("content", userPrompt)
+            })
+        }
+
+        val requestJson = JSONObject().apply {
+            put("model", modelName.trim())
+            put("messages", messagesArray)
+            put("enable_thinking", true)
+            put("preserve_thinking", true)
+            put("max_completion_tokens", 600)
+            put("temperature", 0.7)
+            put("stream", false)
+        }
+
+        val requestBody = requestJson.toString().toRequestBody(JSON_MEDIA_TYPE)
+        val request = Request.Builder()
+            .url(requestUrl)
+            .addHeader("Authorization", "Bearer ${apiKey.trim()}")
+            .addHeader("Content-Type", "application/json")
+            .post(requestBody)
+            .build()
+
+        try {
+            httpClient.newCall(request).execute().use { response ->
+                val responseBodyStr = response.body?.string() ?: ""
+                if (!response.isSuccessful) {
+                    val errorDetail = parseErrorMessage(responseBodyStr, response.code)
+                    return@withContext "云端 API 请求异常 (${response.code})：$errorDetail"
+                }
+
+                val responseJson = JSONObject(responseBodyStr)
+                val choices = responseJson.optJSONArray("choices")
+                if (choices == null || choices.length() == 0) {
+                    return@withContext "云端大模型返回内容为空，请检查模型名称与网络配置。"
+                }
+
+                val messageObj = choices.getJSONObject(0).optJSONObject("message")
+                val contentStr = messageObj?.optString("content") ?: ""
+                contentStr.ifBlank { "本周期自律表现稳健，继续保持！" }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Cloud API generateLongReport exception", e)
+            "生成报告失败：${e.localizedMessage ?: "网络超时"}，请检查网络连接或 API 设置。"
+        }
+    }
+
     override suspend fun evaluateReason(
         reason: String,
         targetAppName: String,
@@ -264,6 +315,102 @@ $dynamicAppContext
                 500 -> "服务商服务器内部错误"
                 else -> "HTTP $code 响应异常"
             }
+        }
+    }
+
+    suspend fun testConnection(
+        testApiKey: String = apiKey,
+        testBaseUrl: String = baseUrl,
+        testModelName: String = modelName
+    ): com.example.myapplication.data.model.ApiHealthResult = withContext(Dispatchers.IO) {
+        val start = System.currentTimeMillis()
+        val key = testApiKey.trim()
+        val url = testBaseUrl.trim()
+        val model = testModelName.trim()
+
+        if (key.isBlank()) {
+            return@withContext com.example.myapplication.data.model.ApiHealthResult(
+                success = false,
+                latencyMs = 0L,
+                message = "API Key 不能为空"
+            )
+        }
+
+        val requestUrl = resolveChatCompletionsUrl(url)
+
+        try {
+            val messagesArray = JSONArray().apply {
+                put(JSONObject().apply {
+                    put("role", "user")
+                    put("content", "hi")
+                })
+            }
+
+            val requestJson = JSONObject().apply {
+                put("model", model)
+                put("messages", messagesArray)
+                put("max_tokens", 1)
+            }
+
+            val requestBody = requestJson.toString().toRequestBody(JSON_MEDIA_TYPE)
+            val request = Request.Builder()
+                .url(requestUrl)
+                .addHeader("Authorization", "Bearer $key")
+                .addHeader("Content-Type", "application/json")
+                .post(requestBody)
+                .build()
+
+            val quickClient = httpClient.newBuilder()
+                .connectTimeout(8, TimeUnit.SECONDS)
+                .readTimeout(12, TimeUnit.SECONDS)
+                .build()
+
+            quickClient.newCall(request).execute().use { response ->
+                val latency = System.currentTimeMillis() - start
+                val code = response.code
+                val body = response.body?.string() ?: ""
+
+                if (response.isSuccessful) {
+                    com.example.myapplication.data.model.ApiHealthResult(
+                        success = true,
+                        latencyMs = latency,
+                        message = "连通正常 · 延迟 ${latency}ms"
+                    )
+                } else {
+                    val errMsg = parseErrorMessage(body, code)
+                    val friendlyMsg = when (code) {
+                        401 -> "API Key 错误或已过期 (401)"
+                        404 -> "模型 [$model] 不存在或端点错误 (404)"
+                        429 -> "账户余额不足或超出频率限制 (429)"
+                        else -> "HTTP $code: $errMsg"
+                    }
+                    com.example.myapplication.data.model.ApiHealthResult(
+                        success = false,
+                        latencyMs = latency,
+                        message = friendlyMsg
+                    )
+                }
+            }
+        } catch (e: java.net.SocketTimeoutException) {
+            val latency = System.currentTimeMillis() - start
+            com.example.myapplication.data.model.ApiHealthResult(
+                success = false,
+                latencyMs = latency,
+                message = "连接超时，请检查端点 URL 或网络"
+            )
+        } catch (e: java.net.UnknownHostException) {
+            com.example.myapplication.data.model.ApiHealthResult(
+                success = false,
+                latencyMs = 0L,
+                message = "域名解析失败，请检查 Base URL"
+            )
+        } catch (e: Exception) {
+            val latency = System.currentTimeMillis() - start
+            com.example.myapplication.data.model.ApiHealthResult(
+                success = false,
+                latencyMs = latency,
+                message = "连接失败: ${e.message ?: "未知异常"}"
+            )
         }
     }
 }

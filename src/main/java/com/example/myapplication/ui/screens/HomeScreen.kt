@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AppBlocking
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.NotificationsActive
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -44,6 +46,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -84,11 +88,26 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     val isProtectionEnabled by repository.isProtectionEnabled.collectAsState(initial = true)
+    val isTestModeEnabled by repository.isTestModeEnabled.collectAsState(initial = false)
+    val engineType by repository.engineType.collectAsState(initial = com.example.myapplication.data.model.AIEngineType.CLOUD)
     val blacklistedPackages by repository.blacklistedPackages.collectAsState(initial = emptySet())
     val currentPersona by repository.currentPersona.collectAsState(initial = PersonaType.STRICT_INSTRUCTOR)
 
     var hasOverlayPermission by remember { mutableStateOf(false) }
     var isAccessibilityEnabled by remember { mutableStateOf(false) }
+    var showDisableProtectionDialog by remember { mutableStateOf(false) }
+
+    if (showDisableProtectionDialog) {
+        DisableProtectionDialog(
+            onDismiss = { showDisableProtectionDialog = false },
+            onConfirmDisable = {
+                scope.launch {
+                    repository.setProtectionEnabled(false)
+                    showDisableProtectionDialog = false
+                }
+            }
+        )
+    }
 
     fun checkPermissions() {
         hasOverlayPermission = Settings.canDrawOverlays(context)
@@ -167,7 +186,7 @@ fun HomeScreen(
                                     color = Color.White
                                 )
                                 Text(
-                                    text = if (isAllReady) com.example.myapplication.util.DeviceInfoHelper.getDeviceStatusBanner(context) else "请检查权限配置",
+                                    text = if (isAllReady) "核心守护权限已全部就绪" else "缺少必要权限，点击下方检查",
                                     fontSize = 12.sp,
                                     color = Color(0xFF90A4AE)
                                 )
@@ -177,11 +196,14 @@ fun HomeScreen(
                         Switch(
                             checked = isProtectionEnabled,
                             onCheckedChange = { enabled ->
-                                scope.launch {
-                                    repository.setProtectionEnabled(enabled)
-                                    if (enabled) {
+                                if (enabled) {
+                                    scope.launch {
+                                        repository.setProtectionEnabled(true)
                                         KeepAliveForegroundService.startService(context)
                                     }
+                                } else {
+                                    // 阻断直接关闭，弹出 92s 冷静倒计时与文本校验弹窗
+                                    showDisableProtectionDialog = true
                                 }
                             },
                             colors = SwitchDefaults.colors(
@@ -214,7 +236,7 @@ fun HomeScreen(
                             onClick = onNavigateToPermissions
                         )
                         StatusIndicator(
-                            title = "端侧 Qwen-3B",
+                            title = if (engineType == com.example.myapplication.data.model.AIEngineType.CLOUD) "云端大模型" else "端侧离线引擎",
                             isOk = true,
                             onClick = onNavigateToAISettings
                         )
@@ -223,54 +245,97 @@ fun HomeScreen(
             }
         }
 
-        // 快捷测试拦截卡片
+        // 开发者测试模式总开关
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF141824))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Code,
+                        contentDescription = null,
+                        tint = Color(0xFF78909C),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "开发者测试模式",
+                        fontSize = 12.sp,
+                        color = Color(0xFF78909C)
+                    )
+                }
+
+                Switch(
+                    checked = isTestModeEnabled,
+                    onCheckedChange = { enabled ->
+                        scope.launch {
+                            repository.setTestModeEnabled(enabled)
+                        }
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = Color(0xFF00E5FF),
+                        uncheckedThumbColor = Color(0xFF546E7A),
+                        uncheckedTrackColor = Color(0xFF1B2335)
+                    )
+                )
+            }
+        }
+
+        // 快捷测试拦截卡片（受测试模式统一控制显隐）
+        item {
+            AnimatedVisibility(visible = isTestModeEnabled) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF141824))
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "测试 AI 理由审批流程",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Text(
-                            text = "立即体验弹窗拦截、AI 评语与转盘时间选择",
-                            fontSize = 12.sp,
-                            color = Color(0xFF90A4AE)
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            if (!Settings.canDrawOverlays(context)) {
-                                onNavigateToPermissions()
-                            } else {
-                                OverlayWindowManager.show(context, context.packageName, isTest = true)
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF00E5FF),
-                            contentColor = Color(0xFF0D0F18)
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.PlayArrow,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("立即测试", fontWeight = FontWeight.Bold)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "测试 AI 理由审批流程",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = "立即体验弹窗拦截、AI 评语与转盘时间选择",
+                                fontSize = 12.sp,
+                                color = Color(0xFF90A4AE)
+                            )
+                        }
+                        Button(
+                            onClick = {
+                                if (!Settings.canDrawOverlays(context)) {
+                                    onNavigateToPermissions()
+                                } else {
+                                    OverlayWindowManager.show(context, context.packageName, isTest = true)
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF00E5FF),
+                                contentColor = Color(0xFF0D0F18)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("立即测试", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -362,20 +427,12 @@ fun HomeScreen(
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = "审查官：${currentPersona.title}",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = currentPersona.desc,
-                                fontSize = 12.sp,
-                                color = Color(0xFF90A4AE),
-                                maxLines = 1
-                            )
-                        }
+                        Text(
+                            text = "审查官：${currentPersona.title}",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
                     }
                     Text(
                         text = "调整 >",
@@ -426,4 +483,185 @@ private fun StatusIndicator(
             color = Color(0xFFCFD8DC)
         )
     }
+}
+
+/**
+ * 关闭自律防护系统的高阻力防冲动确认弹窗：
+ * 强制 92 秒冷静倒计时 + 手动输入「我确认关闭自律防护系统」
+ */
+@Composable
+private fun DisableProtectionDialog(
+    onDismiss: () -> Unit,
+    onConfirmDisable: () -> Unit
+) {
+    val targetText = "我确认关闭自律防护系统"
+    var inputText by remember { mutableStateOf("") }
+    var countdown by remember { mutableStateOf(92) }
+
+    LaunchedEffect(Unit) {
+        while (countdown > 0) {
+            delay(1000L)
+            countdown--
+        }
+    }
+
+    val isInputMatched = inputText.trim() == targetText
+    val canConfirm = countdown == 0 && isInputMatched
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF141824),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFFF5252),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "关闭自律防护系统确认",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "⚠️ 自律防护是保障你专注目标与时间掌控的护城河。为防止一时冲动关闭破戒，请进行冷静思考：",
+                    fontSize = 13.sp,
+                    color = Color(0xFFCFD8DC),
+                    lineHeight = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 92s 冷静倒计时卡片
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (countdown > 0) Color(0x33FFB300) else Color(0x2200E676)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Timer,
+                            contentDescription = null,
+                            tint = if (countdown > 0) Color(0xFFFFB300) else Color(0xFF00E676),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (countdown > 0) "冷静倒计时：${countdown} 秒" else "冷静期已结束，允许确认",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (countdown > 0) Color(0xFFFFB300) else Color(0xFF00E676)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Text(
+                    text = "请在下方完整输入确认誓言：",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF90A4AE)
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                // 目标提示词
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF0E111C), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = targetText,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF00E5FF)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = inputText,
+                    onValueChange = { inputText = it },
+                    enabled = countdown == 0,
+                    placeholder = {
+                        Text(
+                            text = if (countdown > 0) "⏳ 请先等待冷静倒计时归零..." else "请输入「$targetText」",
+                            fontSize = 12.sp,
+                            color = Color(0xFF546E7A)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (isInputMatched) Color(0xFF00E676) else Color(0xFF00E5FF),
+                        unfocusedBorderColor = if (isInputMatched) Color(0xFF00E676) else Color(0xFF263238),
+                        disabledBorderColor = Color(0xFF1B2335),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        disabledTextColor = Color(0xFF546E7A),
+                        disabledContainerColor = Color(0xFF0A0C14)
+                    )
+                )
+
+                if (countdown == 0 && inputText.isNotBlank() && !isInputMatched) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "输入文字与目标誓言不一致",
+                        fontSize = 11.sp,
+                        color = Color(0xFFFF5252)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirmDisable,
+                enabled = canConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFF5252),
+                    disabledContainerColor = Color(0xFF263238),
+                    contentColor = Color.White,
+                    disabledContentColor = Color(0xFF78909C)
+                ),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(
+                    text = when {
+                        countdown > 0 -> "冷静期中 (${countdown}s)"
+                        !isInputMatched -> "请输入完整语句"
+                        else -> "我已充分冷静，确认关闭"
+                    },
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text("保持开启 (推荐)", color = Color(0xFF00E5FF), fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
