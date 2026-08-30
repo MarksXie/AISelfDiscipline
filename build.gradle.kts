@@ -13,8 +13,8 @@ android {
         applicationId = "com.example.myapplication"
         minSdk = 34
         targetSdk = 37
-        versionCode = 3
-        versionName = "1.2"
+        versionCode = 4
+        versionName = "1.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -75,6 +75,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-service:2.8.7")
     implementation("androidx.datastore:datastore-preferences:1.1.2")
     implementation("androidx.navigation:navigation-compose:2.8.7")

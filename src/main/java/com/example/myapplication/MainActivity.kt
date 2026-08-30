@@ -13,6 +13,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,7 +36,6 @@ import androidx.compose.material.icons.rounded.AppBlocking
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.Shield
@@ -64,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -77,8 +78,19 @@ import com.example.myapplication.ui.screens.BlacklistScreen
 import com.example.myapplication.ui.screens.HomeScreen
 import com.example.myapplication.ui.screens.PermissionGuideScreen
 import com.example.myapplication.ui.screens.StatisticsScreen
-import com.example.myapplication.ui.theme.DarkBg
+import com.example.myapplication.ui.theme.CaramelSecondary
 import com.example.myapplication.ui.theme.MyApplicationTheme
+import com.example.myapplication.ui.theme.SageGreen
+import com.example.myapplication.ui.theme.TerracottaPrimary
+import com.example.myapplication.ui.theme.TerracottaPrimaryContainer
+import com.example.myapplication.ui.theme.WarmBackground
+import com.example.myapplication.ui.theme.WarmBorder
+import com.example.myapplication.ui.theme.WarmBorderLight
+import com.example.myapplication.ui.theme.WarmSurface
+import com.example.myapplication.ui.theme.WarmSurfaceContainer
+import com.example.myapplication.ui.theme.WarmTextMuted
+import com.example.myapplication.ui.theme.WarmTextPrimary
+import com.example.myapplication.ui.theme.WarmTextSecondary
 
 enum class MainDestination(val label: String) {
     HOME("首页守护"),
@@ -137,21 +149,17 @@ fun MainAppContainer() {
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = DarkBg,
+        containerColor = WarmBackground,
         topBar = {
             TopAppBar(
                 title = {
                     Surface(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .clickable { showAboutDialog = true }
-                            .border(
-                                width = 1.dp,
-                                color = Color(0x3300E5FF),
-                                shape = RoundedCornerShape(12.dp)
-                            ),
-                        color = Color(0x1F1E293B),
-                        shape = RoundedCornerShape(12.dp)
+                            .clickable { showAboutDialog = true },
+                        shape = RoundedCornerShape(12.dp),
+                        color = WarmSurface,
+                        border = BorderStroke(1.dp, WarmBorder)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -161,61 +169,67 @@ fun MainAppContainer() {
                             Icon(
                                 imageVector = currentTab.icon,
                                 contentDescription = null,
-                                tint = Color(0xFF00E5FF),
+                                tint = TerracottaPrimary,
                                 modifier = Modifier.size(20.dp)
                             )
                             Text(
                                 text = currentTab.label,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
-                                color = Color.White
+                                color = WarmTextPrimary
                             )
                             Icon(
                                 imageVector = Icons.Rounded.ChevronRight,
                                 contentDescription = "查看软件版本及关于信息",
-                                tint = Color(0xFF90A4AE),
+                                tint = WarmTextMuted,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DarkBg,
-                    titleContentColor = Color.White
+                    containerColor = WarmBackground,
+                    titleContentColor = WarmTextPrimary
                 )
             )
         },
         bottomBar = {
-            NavigationBar(
-                containerColor = Color(0xFF10131E),
-                contentColor = Color.White
+            Surface(
+                shadowElevation = 4.dp,
+                color = WarmSurface,
+                border = BorderStroke(0.5.dp, WarmBorderLight)
             ) {
-                MainDestination.entries.forEach { tab ->
-                    val isSelected = currentTab == tab
-                    NavigationBarItem(
-                        selected = isSelected,
-                        onClick = { currentTab = tab },
-                        icon = {
-                            Icon(
-                                imageVector = tab.icon,
-                                contentDescription = tab.label
+                NavigationBar(
+                    containerColor = WarmSurface,
+                    contentColor = WarmTextPrimary
+                ) {
+                    MainDestination.entries.forEach { tab ->
+                        val isSelected = currentTab == tab
+                        NavigationBarItem(
+                            selected = isSelected,
+                            onClick = { currentTab = tab },
+                            icon = {
+                                Icon(
+                                    imageVector = tab.icon,
+                                    contentDescription = tab.label
+                                )
+                            },
+                            label = {
+                                Text(
+                                    text = tab.label,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = TerracottaPrimary,
+                                selectedTextColor = TerracottaPrimary,
+                                unselectedIconColor = WarmTextSecondary,
+                                unselectedTextColor = WarmTextSecondary,
+                                indicatorColor = TerracottaPrimaryContainer
                             )
-                        },
-                        label = {
-                            Text(
-                                text = tab.label,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF00E5FF),
-                            selectedTextColor = Color(0xFF00E5FF),
-                            unselectedIconColor = Color(0xFF78909C),
-                            unselectedTextColor = Color(0xFF78909C),
-                            indicatorColor = Color(0xFF1B2335)
                         )
-                    )
+                    }
                 }
             }
         }
@@ -252,7 +266,7 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
     val (versionName, versionCode) = remember(context) {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            val vName = pInfo.versionName ?: "1.2"
+            val vName = pInfo.versionName ?: "1.3"
             val vCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 pInfo.longVersionCode.toString()
             } else {
@@ -261,7 +275,7 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
             }
             Pair(vName, vCode)
         } catch (e: Exception) {
-            Pair("1.2", "3")
+            Pair("1.3", "4")
         }
     }
 
@@ -275,13 +289,13 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
                     .padding(vertical = 6.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 图标外框
+                // 图标外框 (陶土渐变)
                 Box(
                     modifier = Modifier
                         .size(64.dp)
                         .background(
                             brush = Brush.linearGradient(
-                                colors = listOf(Color(0xFF00E5FF), Color(0xFF00E676))
+                                colors = listOf(TerracottaPrimary, CaramelSecondary)
                             ),
                             shape = CircleShape
                         ),
@@ -290,7 +304,7 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
                     Icon(
                         imageVector = Icons.Rounded.Shield,
                         contentDescription = "App Logo",
-                        tint = Color(0xFF0A0D18),
+                        tint = Color.White,
                         modifier = Modifier.size(36.dp)
                     )
                 }
@@ -301,21 +315,21 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
                     text = "AI 自律守护",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = WarmTextPrimary
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = Color(0x3300E5FF),
+                    color = TerracottaPrimaryContainer,
                     modifier = Modifier.padding(top = 2.dp)
                 ) {
                     Text(
                         text = "v$versionName (Build $versionCode) • 正式版",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF00E5FF),
+                        color = TerracottaPrimary,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
                     )
                 }
@@ -323,9 +337,10 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(18.dp))
 
                 // 核心理念卡片
-                Card(
+                Surface(
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2232)),
+                    color = WarmSurfaceContainer,
+                    border = BorderStroke(0.8.dp, WarmBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
@@ -333,7 +348,7 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
                             Icon(
                                 imageVector = Icons.Rounded.AutoAwesome,
                                 contentDescription = null,
-                                tint = Color(0xFF00E676),
+                                tint = SageGreen,
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -341,14 +356,14 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
                                 text = "核心理念",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFECEFF1)
+                                color = WarmTextPrimary
                             )
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
                             text = "基于 AI 多模态大模型审查的硬核防沉迷工具。当受保护应用被打开时，严格由 AI 审查官评估开启理由与时长，重获专注与时间主控权。",
                             fontSize = 12.sp,
-                            color = Color(0xFF90A4AE),
+                            color = WarmTextSecondary,
                             lineHeight = 18.sp
                         )
                     }
@@ -357,9 +372,10 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // 架构与特性标签
-                Card(
+                Surface(
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2232)),
+                    color = WarmSurfaceContainer,
+                    border = BorderStroke(0.8.dp, WarmBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -379,8 +395,8 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF00E5FF),
-                    contentColor = Color(0xFF0C0E17)
+                    containerColor = TerracottaPrimary,
+                    contentColor = Color.White
                 )
             ) {
                 Text(
@@ -390,7 +406,7 @@ fun AboutAppDialog(onDismiss: () -> Unit) {
                 )
             }
         },
-        containerColor = Color(0xFF131722),
+        containerColor = WarmSurface,
         shape = RoundedCornerShape(20.dp)
     )
 }
@@ -401,7 +417,7 @@ private fun FeatureItem(title: String, desc: String) {
         Icon(
             imageVector = Icons.Rounded.CheckCircle,
             contentDescription = null,
-            tint = Color(0xFF00E5FF),
+            tint = SageGreen,
             modifier = Modifier.size(14.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
@@ -409,12 +425,12 @@ private fun FeatureItem(title: String, desc: String) {
             text = "$title：",
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFFECEFF1)
+            color = WarmTextPrimary
         )
         Text(
             text = desc,
             fontSize = 12.sp,
-            color = Color(0xFF90A4AE)
+            color = WarmTextSecondary
         )
     }
 }

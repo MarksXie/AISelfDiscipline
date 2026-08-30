@@ -54,6 +54,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.myapplication.ui.theme.AmberWarm
+import com.example.myapplication.ui.theme.CaramelSecondary
+import com.example.myapplication.ui.theme.SageGreen
+import com.example.myapplication.ui.theme.SageGreenContainer
+import com.example.myapplication.ui.theme.TerracottaPrimary
+import com.example.myapplication.ui.theme.TerracottaPrimaryContainer
+import com.example.myapplication.ui.theme.WarmBorder
+import com.example.myapplication.ui.theme.WarmSurface
+import com.example.myapplication.ui.theme.WarmSurfaceContainer
+import com.example.myapplication.ui.theme.WarmTextMuted
+import com.example.myapplication.ui.theme.WarmTextPrimary
+import com.example.myapplication.ui.theme.WarmTextSecondary
 import kotlin.math.PI
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -78,7 +90,7 @@ fun DurationDialPicker(
     var selectedMinutes by remember { mutableIntStateOf(initialMinutes) }
     var isDragging by remember { mutableStateOf(false) }
 
-    // 预设时长：涵盖 AI 推荐、短时专注、常规事务、中长程会议（最高 8 小时 / 480 分钟）
+    // 预设时长：涵盖 AI 建议、短时专注、常规事务、长程会议（最高 8 小时 / 480 分钟）
     val presetDurations = remember(aiSuggestedMinutes) {
         val list = mutableListOf<PresetDuration>()
         if (aiSuggestedMinutes != null && aiSuggestedMinutes > 0) {
@@ -158,7 +170,7 @@ fun DurationDialPicker(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(
@@ -169,20 +181,20 @@ fun DurationDialPicker(
             Icon(
                 imageVector = Icons.Rounded.Timer,
                 contentDescription = null,
-                tint = Color(0xFF00E676),
-                modifier = Modifier.size(24.dp)
+                tint = TerracottaPrimary,
+                modifier = Modifier.size(22.dp)
             )
             Spacer(modifier = Modifier.size(8.dp))
             Text(
-                text = "设定放行时长 (支持开会/长程场景)",
+                text = "设定放行时长 (支持长程场景)",
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = WarmTextPrimary
                 )
             )
         }
 
-        // 步进器独立放置在转盘两边（无任何重叠冲突）
+        // 步进器独立放置在转盘两边
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -195,7 +207,7 @@ fun DurationDialPicker(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF1E2333))
+                    .background(WarmSurfaceContainer)
                     .clickable {
                         selectedMinutes = (selectedMinutes - stepSize).coerceAtLeast(1)
                     },
@@ -205,19 +217,19 @@ fun DurationDialPicker(
                     Icon(
                         imageVector = Icons.Rounded.Remove,
                         contentDescription = "减少",
-                        tint = Color.White,
+                        tint = WarmTextPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
                         text = "-${stepSize}m",
                         fontSize = 9.sp,
-                        color = Color(0xFF90A4AE),
+                        color = WarmTextSecondary,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            // 中间：纯净转盘主体与中心时间文本
+            // 中间：温润奶咖转盘主体与中心时间文本
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
@@ -280,7 +292,7 @@ fun DurationDialPicker(
                             centerOffset.y + innerR * sin(tickAngle)
                         )
                         drawLine(
-                            color = if (isSpecial) Color(0xFF00E5FF) else if (isMajor) Color(0xFF546E7A) else Color(0xFF263238),
+                            color = if (isSpecial) TerracottaPrimary else if (isMajor) CaramelSecondary.copy(alpha = 0.5f) else WarmBorder,
                             start = p1,
                             end = p2,
                             strokeWidth = if (isSpecial) 2.dp.toPx() else if (isMajor) 1.5.dp.toPx() else 1.dp.toPx(),
@@ -288,9 +300,9 @@ fun DurationDialPicker(
                         )
                     }
 
-                    // 底环
+                    // 底环 (柔杏奶咖色)
                     drawArc(
-                        color = Color(0xFF1E2333),
+                        color = Color(0xFFEDE5DC),
                         startAngle = 0f,
                         sweepAngle = 360f,
                         useCenter = false,
@@ -299,16 +311,15 @@ fun DurationDialPicker(
                         style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
 
-                    // 霓虹高亮弧线
+                    // 陶土焦糖柔和高亮弧线
                     drawArc(
                         brush = Brush.sweepGradient(
                             colors = listOf(
-                                Color(0xFF00E5FF),
-                                Color(0xFF00E676),
-                                Color(0xFFFFD600),
-                                Color(0xFFFF5252),
-                                Color(0xFFB388FF),
-                                Color(0xFF00E5FF)
+                                TerracottaPrimary,
+                                CaramelSecondary,
+                                AmberWarm,
+                                SageGreen,
+                                TerracottaPrimary
                             )
                         ),
                         startAngle = -90f,
@@ -326,7 +337,7 @@ fun DurationDialPicker(
                         y = centerOffset.y + radius * sin(angleRad)
                     )
                     drawCircle(
-                        color = Color(0x6600E676),
+                        color = TerracottaPrimary.copy(alpha = 0.25f),
                         radius = strokeWidth * 0.9f,
                         center = handleCenter
                     )
@@ -336,13 +347,13 @@ fun DurationDialPicker(
                         center = handleCenter
                     )
                     drawCircle(
-                        color = Color(0xFF00E676),
+                        color = TerracottaPrimary,
                         radius = strokeWidth * 0.35f,
                         center = handleCenter
                     )
                 }
 
-                // 中心时间展示（纯净无按钮重叠）
+                // 中心时间展示
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
@@ -352,7 +363,7 @@ fun DurationDialPicker(
                         text = formattedDurationText,
                         fontSize = if (hours > 0 && remainingMins > 0) 20.sp else 28.sp,
                         fontWeight = FontWeight.Black,
-                        color = if (hours >= 2) Color(0xFF00E5FF) else Color(0xFF00E676),
+                        color = if (hours >= 2) CaramelSecondary else TerracottaPrimary,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(2.dp))
@@ -360,7 +371,7 @@ fun DurationDialPicker(
                         text = if (hours >= 1) "总计 $selectedMinutes 分钟" else "专注倒计时",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFB0BEC5)
+                        color = WarmTextSecondary
                     )
                 }
             }
@@ -370,7 +381,7 @@ fun DurationDialPicker(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF1E2333))
+                    .background(WarmSurfaceContainer)
                     .clickable {
                         selectedMinutes = (selectedMinutes + stepSize).coerceAtMost(480)
                     },
@@ -380,13 +391,13 @@ fun DurationDialPicker(
                     Icon(
                         imageVector = Icons.Rounded.Add,
                         contentDescription = "增加",
-                        tint = Color(0xFF00E5FF),
+                        tint = TerracottaPrimary,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
                         text = "+${stepSize}m",
                         fontSize = 9.sp,
-                        color = Color(0xFF00E5FF),
+                        color = TerracottaPrimary,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -406,18 +417,18 @@ fun DurationDialPicker(
                 val bgColor by animateColorAsState(
                     if (isSelected) {
                         when {
-                            preset.isAi -> Color(0xFF00E5FF)
-                            preset.isMeeting -> Color(0xFF00E5FF)
-                            else -> Color(0xFF00E676)
+                            preset.isAi -> TerracottaPrimary
+                            preset.isMeeting -> CaramelSecondary
+                            else -> SageGreen
                         }
                     } else if (preset.isAi) {
-                        Color(0xFF0A303F)
+                        TerracottaPrimaryContainer
                     } else {
-                        Color(0xFF1E2333)
+                        WarmSurfaceContainer
                     },
                     label = "chipBg"
                 )
-                val textColor = if (isSelected) Color(0xFF0D0F18) else if (preset.isAi) Color(0xFF00E5FF) else Color.White
+                val textColor = if (isSelected) Color.White else if (preset.isAi) TerracottaPrimary else WarmTextPrimary
 
                 Box(
                     modifier = Modifier
@@ -454,8 +465,8 @@ fun DurationDialPicker(
         Button(
             onClick = { onConfirm(selectedMinutes) },
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (hours >= 2) Color(0xFF00E5FF) else Color(0xFF00E676),
-                contentColor = Color(0xFF12141C)
+                containerColor = SageGreen,
+                contentColor = Color.White
             ),
             shape = RoundedCornerShape(14.dp),
             modifier = Modifier

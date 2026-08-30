@@ -11,9 +11,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -47,6 +47,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -61,7 +62,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
@@ -72,8 +73,27 @@ import com.example.myapplication.data.model.ChatMessage
 import com.example.myapplication.data.model.ChatSender
 import com.example.myapplication.data.model.DecisionType
 import com.example.myapplication.data.model.EvaluationResult
-import com.example.myapplication.data.model.PersonaProfile
 import com.example.myapplication.data.model.PersonaType
+import com.example.myapplication.ui.theme.AmberWarm
+import com.example.myapplication.ui.theme.AmberWarmContainer
+import com.example.myapplication.ui.theme.CaramelSecondary
+import com.example.myapplication.ui.theme.CaramelSecondaryContainer
+import com.example.myapplication.ui.theme.CoralDanger
+import com.example.myapplication.ui.theme.CoralDangerContainer
+import com.example.myapplication.ui.theme.OnAmberWarmContainer
+import com.example.myapplication.ui.theme.OnCoralDangerContainer
+import com.example.myapplication.ui.theme.OnSageGreenContainer
+import com.example.myapplication.ui.theme.OnTerracottaContainer
+import com.example.myapplication.ui.theme.SageGreen
+import com.example.myapplication.ui.theme.SageGreenContainer
+import com.example.myapplication.ui.theme.TerracottaPrimary
+import com.example.myapplication.ui.theme.TerracottaPrimaryContainer
+import com.example.myapplication.ui.theme.WarmBorder
+import com.example.myapplication.ui.theme.WarmSurface
+import com.example.myapplication.ui.theme.WarmSurfaceContainer
+import com.example.myapplication.ui.theme.WarmTextMuted
+import com.example.myapplication.ui.theme.WarmTextPrimary
+import com.example.myapplication.ui.theme.WarmTextSecondary
 
 enum class OverlayStep {
     CONVERSATION_INQUIRY, // 理由陈述与多轮问询气泡对话流
@@ -112,7 +132,7 @@ fun InterceptOverlayContent(
         }
     }
 
-    // 快捷常用理由模版（仅在第一轮展示）
+    // 快捷常用理由模版
     val quickTemplates = listOf(
         "看收藏的教程视频",
         "查快递物流进度",
@@ -131,27 +151,22 @@ fun InterceptOverlayContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xE60D0F18)) // 暗黑半透明毛玻璃底色
+            .background(Color(0xCC1A1614)) // 半透明微暖深咖遮罩，保证对比度
             .imePadding(),
         contentAlignment = Alignment.Center
     ) {
-        // 主卡片
+        // 主卡片 (纯净暖白 + 柔和阴影 + 1dp 细暖边框)
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
-                .clip(RoundedCornerShape(24.dp))
-                .border(
-                    width = 1.dp,
-                    brush = Brush.linearGradient(
-                        listOf(
-                            Color(0xFF00E5FF).copy(alpha = 0.5f),
-                            Color(0xFFB388FF).copy(alpha = 0.2f)
-                        )
-                    ),
-                    shape = RoundedCornerShape(24.dp)
+                .shadow(
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(24.dp),
+                    spotColor = Color(0x33000000)
                 ),
-            color = Color(0xFF141824),
-            tonalElevation = 8.dp
+            shape = RoundedCornerShape(24.dp),
+            color = WarmSurface,
+            border = BorderStroke(1.dp, WarmBorder)
         ) {
             Column(
                 modifier = Modifier
@@ -179,13 +194,13 @@ fun InterceptOverlayContent(
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
-                                    .background(Color(0xFF2A2E3D), RoundedCornerShape(8.dp)),
+                                    .background(WarmSurfaceContainer, RoundedCornerShape(8.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Rounded.Security,
                                     contentDescription = null,
-                                    tint = Color(0xFF00E5FF),
+                                    tint = TerracottaPrimary,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -196,22 +211,22 @@ fun InterceptOverlayContent(
                                 text = if (isTest) "测试拦截【$targetAppName】" else "已拦截【$targetAppName】",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = WarmTextPrimary
                             )
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
                                     modifier = Modifier
                                         .size(6.dp)
                                         .background(
-                                            if (isTest) Color(0xFF00E5FF) else if (isModelReady) Color(0xFF00E676) else Color(0xFFFFB300),
+                                            if (isTest) CaramelSecondary else if (isModelReady) SageGreen else AmberWarm,
                                             CircleShape
                                         )
-                                    )
+                                )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = if (isTest) "演示测试 (不写入审批记录)" else if (isModelReady) "AI 意图审查引擎就绪" else "AI 引擎就绪中...",
                                     fontSize = 11.sp,
-                                    color = if (isTest) Color(0xFF00E5FF) else if (isModelReady) Color(0xFF00E676) else Color(0xFFFFB300)
+                                    color = if (isTest) CaramelSecondary else if (isModelReady) SageGreen else AmberWarm
                                 )
                             }
                         }
@@ -221,39 +236,42 @@ fun InterceptOverlayContent(
                         onClick = { onDismiss(getFullConversationSummary(), currentResult) },
                         modifier = Modifier
                             .size(32.dp)
-                            .background(Color(0x33FFFFFF), CircleShape)
+                            .background(WarmSurfaceContainer, CircleShape)
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
                             contentDescription = "取消",
-                            tint = Color.White,
+                            tint = WarmTextSecondary,
                             modifier = Modifier.size(16.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
                 // 人格标签
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .background(Color(0xFF1E2336), RoundedCornerShape(20.dp))
-                        .padding(horizontal = 12.dp, vertical = 4.dp)
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = TerracottaPrimaryContainer
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Psychology,
-                        contentDescription = null,
-                        tint = Color(0xFF00E5FF),
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "审查官：$personaTitle",
-                        fontSize = 11.sp,
-                        color = Color(0xFF00E5FF),
-                        fontWeight = FontWeight.Medium
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Psychology,
+                            contentDescription = null,
+                            tint = TerracottaPrimary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "审查官：$personaTitle",
+                            fontSize = 11.sp,
+                            color = TerracottaPrimary,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -270,14 +288,14 @@ fun InterceptOverlayContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                // 历史多轮气泡对话展示区 (如果有追问记录或正在打字)
+                                // 历史多轮气泡对话展示区
                                 if (conversationHistory.isNotEmpty() || isAiThinking) {
                                     LazyColumn(
                                         state = chatListState,
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .height(if (conversationHistory.size > 2) 180.dp else 130.dp)
-                                            .background(Color(0xFF0E111C), RoundedCornerShape(14.dp))
+                                            .background(WarmSurfaceContainer, RoundedCornerShape(14.dp))
                                             .padding(10.dp),
                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
@@ -295,33 +313,35 @@ fun InterceptOverlayContent(
                                     Text(
                                         text = "请明确说明打开【$targetAppName】的具体目的（完成什么具体事情）",
                                         fontSize = 12.sp,
-                                        color = Color(0xFF90A4AE)
+                                        color = WarmTextSecondary
                                     )
                                     Spacer(modifier = Modifier.height(10.dp))
                                 }
 
-                                // 动态 AI 提炼的引导建议 (guidance_tip)
+                                // 动态 AI 引导建议
                                 val dynamicGuidance = currentResult?.guidanceTip?.takeIf { it.isNotBlank() }
                                 if (!dynamicGuidance.isNullOrBlank() && conversationHistory.isNotEmpty()) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .background(Color(0x2200E5FF), RoundedCornerShape(10.dp))
-                                            .border(1.dp, Color(0x4400E5FF), RoundedCornerShape(10.dp))
-                                            .padding(horizontal = 10.dp, vertical = 6.dp)
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = AmberWarmContainer,
+                                        border = BorderStroke(0.8.dp, AmberWarm.copy(alpha = 0.3f))
                                     ) {
-                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
                                             Icon(
                                                 imageVector = Icons.Rounded.Psychology,
                                                 contentDescription = null,
-                                                tint = Color(0xFF00E5FF),
+                                                tint = AmberWarm,
                                                 modifier = Modifier.size(14.dp)
                                             )
                                             Spacer(modifier = Modifier.width(6.dp))
                                             Text(
                                                 text = "💡 引导建议：$dynamicGuidance",
                                                 fontSize = 11.sp,
-                                                color = Color(0xFF80D8FF),
+                                                color = OnAmberWarmContainer,
                                                 lineHeight = 14.sp
                                             )
                                         }
@@ -329,7 +349,7 @@ fun InterceptOverlayContent(
                                     Spacer(modifier = Modifier.height(8.dp))
                                 }
 
-                                // 理由输入框（限最多 300 字）
+                                // 理由输入框
                                 OutlinedTextField(
                                     value = inputText,
                                     onValueChange = {
@@ -345,7 +365,7 @@ fun InterceptOverlayContent(
                                             else if (conversationHistory.isEmpty()) "例如：看收藏的Android教程 / 查快递 / 买日用品..."
                                             else "针对追问补充具体要做的事情...",
                                             fontSize = 13.sp,
-                                            color = if (isAiThinking) Color(0xFF00E5FF) else Color(0xFF546E7A)
+                                            color = if (isAiThinking) TerracottaPrimary else WarmTextMuted
                                         )
                                     },
                                     supportingText = {
@@ -356,7 +376,7 @@ fun InterceptOverlayContent(
                                             Text(
                                                 text = "${inputText.length}/300",
                                                 fontSize = 10.sp,
-                                                color = if (inputText.length >= 280) Color(0xFFFFB300) else Color(0xFF78909C)
+                                                color = if (inputText.length >= 280) AmberWarm else WarmTextMuted
                                             )
                                         }
                                     },
@@ -365,33 +385,34 @@ fun InterceptOverlayContent(
                                         .height(105.dp),
                                     shape = RoundedCornerShape(14.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = Color(0xFF00E5FF),
-                                        unfocusedBorderColor = Color(0xFF23283B),
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White
+                                        focusedBorderColor = TerracottaPrimary,
+                                        unfocusedBorderColor = WarmBorder,
+                                        focusedTextColor = WarmTextPrimary,
+                                        unfocusedTextColor = WarmTextPrimary,
+                                        focusedContainerColor = WarmSurface,
+                                        unfocusedContainerColor = WarmSurface
                                     )
                                 )
 
-                                // 快捷模版选择（仅在首轮未输入时显示）
+                                // 快捷模版选择
                                 if (conversationHistory.isEmpty()) {
-                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     FlowRow(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                                         verticalArrangement = Arrangement.spacedBy(6.dp)
                                     ) {
                                         quickTemplates.forEach { template ->
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(12.dp))
-                                                    .background(Color(0xFF1B2030))
-                                                    .clickable { inputText = template }
-                                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                                            Surface(
+                                                shape = RoundedCornerShape(12.dp),
+                                                color = WarmSurfaceContainer,
+                                                modifier = Modifier.clickable { inputText = template }
                                             ) {
                                                 Text(
                                                     text = template,
                                                     fontSize = 11.sp,
-                                                    color = Color(0xFF90CAF9)
+                                                    color = WarmTextSecondary,
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                                 )
                                             }
                                         }
@@ -409,15 +430,15 @@ fun InterceptOverlayContent(
                                         Button(
                                             onClick = { onDismiss(getFullConversationSummary(), currentResult) },
                                             colors = ButtonDefaults.buttonColors(
-                                                containerColor = Color(0xFF2A2E3D),
-                                                contentColor = Color(0xFFFF8A80)
+                                                containerColor = CoralDangerContainer,
+                                                contentColor = CoralDanger
                                             ),
                                             shape = RoundedCornerShape(12.dp),
                                             modifier = Modifier
                                                 .weight(1f)
                                                 .height(46.dp)
                                         ) {
-                                            Text("放弃专注", fontSize = 12.sp)
+                                            Text("放弃专注", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                         }
                                     }
 
@@ -439,7 +460,6 @@ fun InterceptOverlayContent(
                                                         }
                                                         DecisionType.RETRY -> {
                                                             conversationHistory.add(ChatMessage(sender = ChatSender.AI, text = result.comment))
-                                                            // step 保持 CONVERSATION_INQUIRY，提示更新
                                                         }
                                                         DecisionType.DENY -> {
                                                             conversationHistory.add(ChatMessage(sender = ChatSender.AI, text = result.comment))
@@ -451,8 +471,8 @@ fun InterceptOverlayContent(
                                         },
                                         enabled = inputText.trim().isNotBlank() && !isAiThinking,
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF00E5FF),
-                                            contentColor = Color(0xFF0D0F18)
+                                            containerColor = TerracottaPrimary,
+                                            contentColor = Color.White
                                         ),
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
@@ -461,7 +481,7 @@ fun InterceptOverlayContent(
                                     ) {
                                         if (isAiThinking) {
                                             CircularProgressIndicator(
-                                                color = Color.Black,
+                                                color = Color.White,
                                                 strokeWidth = 2.dp,
                                                 modifier = Modifier.size(16.dp)
                                             )
@@ -491,65 +511,67 @@ fun InterceptOverlayContent(
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 // 审批通过标志与评语展示
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .background(Color(0x3300E676), RoundedCornerShape(12.dp))
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = SageGreenContainer
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.CheckCircle,
-                                        contentDescription = null,
-                                        tint = Color(0xFF00E676),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "审批结论：通过放行 (ALLOW)",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFF00E676)
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.CheckCircle,
+                                            contentDescription = null,
+                                            tint = SageGreen,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "审批结论：通过放行 (ALLOW)",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = OnSageGreenContainer
+                                        )
+                                    }
                                 }
 
                                 Spacer(modifier = Modifier.height(10.dp))
 
                                 // AI 终审个性化评语卡片
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(Color(0xFF1E2336), RoundedCornerShape(12.dp))
-                                        .padding(12.dp)
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = WarmSurfaceContainer,
+                                    border = BorderStroke(0.8.dp, WarmBorder)
                                 ) {
-                                    Column {
+                                    Column(modifier = Modifier.padding(12.dp)) {
                                         Text(
                                             text = "审查官总结：",
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFF00E5FF)
+                                            color = TerracottaPrimary
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
                                             text = currentResult?.comment ?: "已核准你的使用意图，请专注完成任务。",
                                             fontSize = 12.sp,
-                                            color = Color.White,
+                                            color = WarmTextPrimary,
                                             lineHeight = 16.sp
                                         )
                                     }
                                 }
 
-                                Spacer(modifier = Modifier.height(16.dp))
+                                Spacer(modifier = Modifier.height(14.dp))
 
                                 Text(
                                     text = "请旋转转盘选择本次专注放行时长",
                                     fontSize = 12.sp,
-                                    color = Color(0xFF90A4AE)
+                                    color = WarmTextSecondary
                                 )
 
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(10.dp))
 
                                 val aiMinutes = (currentResult?.suggestedMinutes ?: 15).coerceIn(1, 480)
-                                // 罗盘放行选择器
                                 DurationDialPicker(
                                     initialMinutes = aiMinutes,
                                     aiSuggestedMinutes = aiMinutes,
@@ -567,47 +589,50 @@ fun InterceptOverlayContent(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .background(Color(0x33FF1744), RoundedCornerShape(12.dp))
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = CoralDangerContainer
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Block,
-                                        contentDescription = null,
-                                        tint = Color(0xFFFF1744),
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = "审批结论：予以拦截 (DENY)",
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFFF1744)
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Block,
+                                            contentDescription = null,
+                                            tint = CoralDanger,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "审批结论：予以拦截 (DENY)",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = OnCoralDangerContainer
+                                        )
+                                    }
                                 }
 
                                 Spacer(modifier = Modifier.height(12.dp))
 
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(Color(0xFF1E2336), RoundedCornerShape(12.dp))
-                                        .padding(14.dp)
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = WarmSurfaceContainer,
+                                    border = BorderStroke(0.8.dp, CoralDanger.copy(alpha = 0.3f))
                                 ) {
-                                    Column {
+                                    Column(modifier = Modifier.padding(14.dp)) {
                                         Text(
                                             text = "审查官裁决：",
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = Color(0xFFFF8A80)
+                                            color = CoralDanger
                                         )
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
                                             text = currentResult?.comment ?: "理由不符合正当使用规则，本次申请不予放行。",
                                             fontSize = 12.sp,
-                                            color = Color.White,
+                                            color = WarmTextPrimary,
                                             lineHeight = 16.sp
                                         )
                                     }
@@ -619,30 +644,26 @@ fun InterceptOverlayContent(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Button(
+                                    OutlinedButton(
                                         onClick = {
-                                            // 允许重置重试
                                             conversationHistory.clear()
                                             inputText = ""
                                             currentResult = null
                                             step = OverlayStep.CONVERSATION_INQUIRY
                                         },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFF2A2E3D),
-                                            contentColor = Color.White
-                                        ),
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
                                             .weight(1f)
-                                            .height(46.dp)
+                                            .height(46.dp),
+                                        border = BorderStroke(1.dp, WarmBorder)
                                     ) {
-                                        Text("重新陈述", fontSize = 12.sp)
+                                        Text("重新陈述", fontSize = 12.sp, color = WarmTextPrimary)
                                     }
 
                                     Button(
                                         onClick = { onDismiss(getFullConversationSummary(), currentResult) },
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = Color(0xFFFF1744),
+                                            containerColor = CoralDanger,
                                             contentColor = Color.White
                                         ),
                                         shape = RoundedCornerShape(12.dp),
@@ -677,44 +698,36 @@ fun ChatBubbleItem(message: ChatMessage) {
             Box(
                 modifier = Modifier
                     .size(24.dp)
-                    .background(Color(0x3300E5FF), CircleShape),
+                    .background(TerracottaPrimaryContainer, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Psychology,
                     contentDescription = null,
-                    tint = Color(0xFF00E5FF),
+                    tint = TerracottaPrimary,
                     modifier = Modifier.size(14.dp)
                 )
             }
             Spacer(modifier = Modifier.width(6.dp))
         }
 
-        Box(
-            modifier = Modifier
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 14.dp,
-                        topEnd = 14.dp,
-                        bottomStart = if (isUser) 14.dp else 2.dp,
-                        bottomEnd = if (isUser) 2.dp else 14.dp
-                    )
-                )
-                .background(
-                    if (isUser) {
-                        Brush.linearGradient(listOf(Color(0xFF00B0FF), Color(0xFF00E5FF)))
-                    } else {
-                        Brush.linearGradient(listOf(Color(0xFF1E2336), Color(0xFF252B42)))
-                    }
-                )
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+        Surface(
+            shape = RoundedCornerShape(
+                topStart = 14.dp,
+                topEnd = 14.dp,
+                bottomStart = if (isUser) 14.dp else 2.dp,
+                bottomEnd = if (isUser) 2.dp else 14.dp
+            ),
+            color = if (isUser) TerracottaPrimaryContainer else WarmSurface,
+            border = if (!isUser) BorderStroke(0.8.dp, WarmBorder) else null
         ) {
             Text(
                 text = message.text,
                 fontSize = 12.sp,
-                color = if (isUser) Color(0xFF0D0F18) else Color.White,
+                color = if (isUser) OnTerracottaContainer else WarmTextPrimary,
                 fontWeight = if (isUser) FontWeight.Medium else FontWeight.Normal,
-                lineHeight = 16.sp
+                lineHeight = 16.sp,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
             )
         }
     }
@@ -733,28 +746,26 @@ fun TypingIndicatorBubble() {
         Box(
             modifier = Modifier
                 .size(24.dp)
-                .background(Color(0x3300E5FF), CircleShape),
+                .background(TerracottaPrimaryContainer, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Rounded.Psychology,
                 contentDescription = null,
-                tint = Color(0xFF00E5FF),
+                tint = TerracottaPrimary,
                 modifier = Modifier.size(14.dp)
             )
         }
         Spacer(modifier = Modifier.width(6.dp))
-        Box(
-            modifier = Modifier
-                .background(
-                    Color(0xFF1E2336),
-                    RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 2.dp, bottomEnd = 14.dp)
-                )
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+        Surface(
+            shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 2.dp, bottomEnd = 14.dp),
+            color = WarmSurface,
+            border = BorderStroke(0.8.dp, WarmBorder)
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 BouncingDot(initialDelay = 0)
                 BouncingDot(initialDelay = 160)
@@ -769,7 +780,7 @@ fun BouncingDot(initialDelay: Int) {
     val infiniteTransition = rememberInfiniteTransition(label = "dotBouncing")
     val offsetY by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = -5f,
+        targetValue = -4f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 360, delayMillis = initialDelay, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -790,6 +801,6 @@ fun BouncingDot(initialDelay: Int) {
         modifier = Modifier
             .offset(y = offsetY.dp)
             .size(6.dp)
-            .background(Color(0xFF00E5FF).copy(alpha = alpha), CircleShape)
+            .background(TerracottaPrimary.copy(alpha = alpha), CircleShape)
     )
 }

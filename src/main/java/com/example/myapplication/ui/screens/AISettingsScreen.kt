@@ -1,7 +1,7 @@
 package com.example.myapplication.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,8 +29,6 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -38,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -58,6 +58,26 @@ import com.example.myapplication.AppApplication
 import com.example.myapplication.data.model.AIEngineType
 import com.example.myapplication.data.model.CloudProviderConfig
 import com.example.myapplication.data.model.PersonaProfile
+import com.example.myapplication.ui.theme.AmberWarm
+import com.example.myapplication.ui.theme.AmberWarmContainer
+import com.example.myapplication.ui.theme.CaramelSecondary
+import com.example.myapplication.ui.theme.CaramelSecondaryContainer
+import com.example.myapplication.ui.theme.CoralDanger
+import com.example.myapplication.ui.theme.CoralDangerContainer
+import com.example.myapplication.ui.theme.OnAmberWarmContainer
+import com.example.myapplication.ui.theme.OnCoralDangerContainer
+import com.example.myapplication.ui.theme.OnSageGreenContainer
+import com.example.myapplication.ui.theme.SageGreen
+import com.example.myapplication.ui.theme.SageGreenContainer
+import com.example.myapplication.ui.theme.TerracottaPrimary
+import com.example.myapplication.ui.theme.TerracottaPrimaryContainer
+import com.example.myapplication.ui.theme.WarmBackground
+import com.example.myapplication.ui.theme.WarmBorder
+import com.example.myapplication.ui.theme.WarmSurface
+import com.example.myapplication.ui.theme.WarmSurfaceContainer
+import com.example.myapplication.ui.theme.WarmTextMuted
+import com.example.myapplication.ui.theme.WarmTextPrimary
+import com.example.myapplication.ui.theme.WarmTextSecondary
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -83,43 +103,59 @@ fun AISettingsScreen() {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0D0F18))
-            .padding(16.dp),
+            .background(WarmBackground)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         // 1. 顶部标题区
         item {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(TerracottaPrimaryContainer, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         imageVector = Icons.Rounded.Psychology,
                         contentDescription = null,
-                        tint = Color(0xFF00E5FF),
-                        modifier = Modifier.size(26.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "AI 审查官引擎与人格配置",
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        tint = TerracottaPrimary,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "自由切换云端千亿大模型或端侧离线引擎，管理专属审查官人设",
-                    fontSize = 12.sp,
-                    color = Color(0xFF90A4AE)
-                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Column {
+                    Text(
+                        text = "AI 审查官引擎与人格配置",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = WarmTextPrimary
+                    )
+                    Text(
+                        text = "自由切换云端千亿大模型或端侧离线引擎，管理专属审查官人设",
+                        fontSize = 11.sp,
+                        color = WarmTextSecondary
+                    )
+                }
             }
         }
 
-        // 2. 当前生效引擎概览卡片（带设置按钮）
+        // 2. 当前生效引擎概览卡片
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        elevation = 2.dp,
+                        shape = RoundedCornerShape(16.dp),
+                        spotColor = Color(0x128D5B3E)
+                    ),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF141824))
+                color = WarmSurface,
+                border = BorderStroke(1.dp, WarmBorder)
             ) {
                 Row(
                     modifier = Modifier
@@ -132,19 +168,20 @@ fun AISettingsScreen() {
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val isCloud = engineType == AIEngineType.CLOUD
                         Box(
                             modifier = Modifier
                                 .size(44.dp)
                                 .background(
-                                    if (engineType == AIEngineType.CLOUD) Color(0x2200E5FF) else Color(0x22B388FF),
+                                    if (isCloud) TerracottaPrimaryContainer else CaramelSecondaryContainer,
                                     CircleShape
                                 ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = if (engineType == AIEngineType.CLOUD) Icons.Rounded.Cloud else Icons.Rounded.Memory,
+                                imageVector = if (isCloud) Icons.Rounded.Cloud else Icons.Rounded.Memory,
                                 contentDescription = null,
-                                tint = if (engineType == AIEngineType.CLOUD) Color(0xFF00E5FF) else Color(0xFFB388FF),
+                                tint = if (isCloud) TerracottaPrimary else CaramelSecondary,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -153,23 +190,23 @@ fun AISettingsScreen() {
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = if (engineType == AIEngineType.CLOUD) "云端大模型" else "端侧离线引擎",
+                                text = if (isCloud) "云端大模型引擎" else "端侧离线引擎",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = WarmTextPrimary
                             )
                             if (isTestModeEnabled) {
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .background(Color(0x33FFB300), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = AmberWarmContainer
                                 ) {
                                     Text(
                                         text = "测试",
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = Color(0xFFFFB300)
+                                        color = OnAmberWarmContainer,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
                                     )
                                 }
                             }
@@ -179,8 +216,8 @@ fun AISettingsScreen() {
                     Button(
                         onClick = { showEngineConfigDialog = true },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF00E5FF),
-                            contentColor = Color(0xFF0D0F18)
+                            containerColor = TerracottaPrimary,
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(10.dp)
                     ) {
@@ -199,13 +236,18 @@ fun AISettingsScreen() {
         // 3. 保存反馈提示
         if (saveFeedback != null) {
             item {
-                Text(
-                    text = saveFeedback!!,
-                    color = Color(0xFF00E676),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 4.dp)
-                )
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = SageGreenContainer
+                ) {
+                    Text(
+                        text = saveFeedback!!,
+                        color = OnSageGreenContainer,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
 
@@ -222,7 +264,7 @@ fun AISettingsScreen() {
                     text = "审查官人格矩阵 (支持自定义)",
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = WarmTextPrimary
                 )
 
                 TextButton(
@@ -234,11 +276,11 @@ fun AISettingsScreen() {
                     Icon(
                         imageVector = Icons.Rounded.Add,
                         contentDescription = null,
-                        tint = Color(0xFF00E5FF),
+                        tint = TerracottaPrimary,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("新建人格", color = Color(0xFF00E5FF), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("新建人格", color = TerracottaPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -246,9 +288,10 @@ fun AISettingsScreen() {
         // 5. 人格卡片列表
         items(allPersonas, key = { it.id }) { persona ->
             val isSelected = activePersona.id == persona.id
-            Card(
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
                     .clickable {
                         scope.launch {
                             repository.setActivePersonaId(persona.id)
@@ -256,10 +299,11 @@ fun AISettingsScreen() {
                         }
                     },
                 shape = RoundedCornerShape(14.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isSelected) Color(0xFF1A2238) else Color(0xFF141824)
-                ),
-                border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFF00E5FF)) else null
+                color = WarmSurface,
+                border = BorderStroke(
+                    1.5.dp,
+                    if (isSelected) TerracottaPrimary else WarmBorder
+                )
             ) {
                 Row(
                     modifier = Modifier
@@ -276,8 +320,8 @@ fun AISettingsScreen() {
                             }
                         },
                         colors = RadioButtonDefaults.colors(
-                            selectedColor = Color(0xFF00E5FF),
-                            unselectedColor = Color(0xFF546E7A)
+                            selectedColor = TerracottaPrimary,
+                            unselectedColor = WarmTextMuted
                         )
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -287,16 +331,21 @@ fun AISettingsScreen() {
                                 text = persona.title,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if (isSelected) Color(0xFF00E5FF) else Color.White
+                                color = if (isSelected) TerracottaPrimary else WarmTextPrimary
                             )
                             if (persona.isCustom) {
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .background(Color(0xFF263238), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 4.dp, vertical = 1.dp)
+                                Surface(
+                                    shape = RoundedCornerShape(4.dp),
+                                    color = TerracottaPrimaryContainer
                                 ) {
-                                    Text("自定义", fontSize = 9.sp, color = Color(0xFF80D8FF))
+                                    Text(
+                                        "自定义",
+                                        fontSize = 9.sp,
+                                        color = TerracottaPrimary,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                    )
                                 }
                             }
                         }
@@ -304,7 +353,7 @@ fun AISettingsScreen() {
                         Text(
                             text = persona.desc,
                             fontSize = 12.sp,
-                            color = Color(0xFF90A4AE),
+                            color = WarmTextSecondary,
                             lineHeight = 16.sp
                         )
                     }
@@ -318,7 +367,7 @@ fun AISettingsScreen() {
                                 Icon(
                                     imageVector = Icons.Rounded.Edit,
                                     contentDescription = "编辑",
-                                    tint = Color(0xFF90A4AE),
+                                    tint = WarmTextSecondary,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -328,7 +377,7 @@ fun AISettingsScreen() {
                                 Icon(
                                     imageVector = Icons.Rounded.Delete,
                                     contentDescription = "删除",
-                                    tint = Color(0xFFFF8A80),
+                                    tint = CoralDanger,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
@@ -359,7 +408,7 @@ fun AISettingsScreen() {
                 Text(
                     text = if (editingPersona == null) "新建自定义审查官" else "编辑自定义审查官",
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = WarmTextPrimary
                 )
             },
             text = {
@@ -370,7 +419,7 @@ fun AISettingsScreen() {
                     Text(
                         text = "填写人格信息，系统将自动注入 App 意图判定审查上下文：",
                         fontSize = 11.sp,
-                        color = Color(0xFF90A4AE),
+                        color = WarmTextSecondary,
                         lineHeight = 14.sp
                     )
 
@@ -378,14 +427,16 @@ fun AISettingsScreen() {
                         value = inputTitle,
                         onValueChange = { inputTitle = it },
                         label = { Text("人格名称 (Title)", fontSize = 12.sp) },
-                        placeholder = { Text("例如：苏格拉底导师 / 健身教练", fontSize = 12.sp) },
+                        placeholder = { Text("例如：苏格拉底导师 / 健身教练", fontSize = 12.sp, color = WarmTextMuted) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF00E5FF),
-                            unfocusedBorderColor = Color(0xFF23283B),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedBorderColor = TerracottaPrimary,
+                            unfocusedBorderColor = WarmBorder,
+                            focusedTextColor = WarmTextPrimary,
+                            unfocusedTextColor = WarmTextPrimary,
+                            focusedContainerColor = WarmSurface,
+                            unfocusedContainerColor = WarmSurface
                         )
                     )
 
@@ -393,14 +444,16 @@ fun AISettingsScreen() {
                         value = inputDesc,
                         onValueChange = { inputDesc = it },
                         label = { Text("简短描述 (Desc)", fontSize = 12.sp) },
-                        placeholder = { Text("例如：哲学反思发问，探究动机本质", fontSize = 12.sp) },
+                        placeholder = { Text("例如：哲学反思发问，探究动机本质", fontSize = 12.sp, color = WarmTextMuted) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF00E5FF),
-                            unfocusedBorderColor = Color(0xFF23283B),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedBorderColor = TerracottaPrimary,
+                            unfocusedBorderColor = WarmBorder,
+                            focusedTextColor = WarmTextPrimary,
+                            unfocusedTextColor = WarmTextPrimary,
+                            focusedContainerColor = WarmSurface,
+                            unfocusedContainerColor = WarmSurface
                         )
                     )
 
@@ -408,22 +461,24 @@ fun AISettingsScreen() {
                         value = inputCoreTask,
                         onValueChange = { inputCoreTask = it },
                         label = { Text("【核心任务】专属语气与审查侧重", fontSize = 12.sp) },
-                        placeholder = { Text("例如：以哲学家的反问口吻启发用户审视打开App的真实目的，对摸鱼予以反思引导，对明确事项痛快放行。", fontSize = 12.sp) },
+                        placeholder = { Text("例如：以启发式口吻审视打开App的真实目的...", fontSize = 12.sp, color = WarmTextMuted) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(100.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF00E5FF),
-                            unfocusedBorderColor = Color(0xFF23283B),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedBorderColor = TerracottaPrimary,
+                            unfocusedBorderColor = WarmBorder,
+                            focusedTextColor = WarmTextPrimary,
+                            unfocusedTextColor = WarmTextPrimary,
+                            focusedContainerColor = WarmSurface,
+                            unfocusedContainerColor = WarmSurface
                         )
                     )
 
                     if (dialogError != null) {
                         Text(
                             text = dialogError!!,
-                            color = Color(0xFFFF8A80),
+                            color = CoralDanger,
                             fontSize = 11.sp
                         )
                     }
@@ -457,19 +512,19 @@ fun AISettingsScreen() {
                         showEditPersonaDialog = false
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF00E5FF),
-                        contentColor = Color(0xFF0D0F18)
+                        containerColor = TerracottaPrimary,
+                        contentColor = Color.White
                     )
                 ) {
                     Text("保存生效", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { showEditPersonaDialog = false }) {
-                    Text("取消")
+                OutlinedButton(onClick = { showEditPersonaDialog = false }, shape = RoundedCornerShape(10.dp)) {
+                    Text("取消", color = WarmTextSecondary)
                 }
             },
-            containerColor = Color(0xFF1E2336),
+            containerColor = WarmSurface,
             shape = RoundedCornerShape(16.dp)
         )
     }
@@ -479,11 +534,11 @@ fun AISettingsScreen() {
         val target = personaToDelete!!
         AlertDialog(
             onDismissRequest = { personaToDelete = null },
-            title = { Text("确认删除审查官？", color = Color.White, fontWeight = FontWeight.Bold) },
+            title = { Text("确认删除审查官？", color = WarmTextPrimary, fontWeight = FontWeight.Bold) },
             text = {
                 Text(
                     text = "确定要删除自定义人格【${target.title}】吗？删除后不可恢复。",
-                    color = Color(0xFF90A4AE),
+                    color = WarmTextSecondary,
                     fontSize = 13.sp
                 )
             },
@@ -496,17 +551,17 @@ fun AISettingsScreen() {
                         }
                         personaToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF1744))
+                    colors = ButtonDefaults.buttonColors(containerColor = CoralDanger)
                 ) {
                     Text("确认删除", color = Color.White)
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { personaToDelete = null }) {
-                    Text("取消")
+                OutlinedButton(onClick = { personaToDelete = null }, shape = RoundedCornerShape(10.dp)) {
+                    Text("取消", color = WarmTextSecondary)
                 }
             },
-            containerColor = Color(0xFF1E2336),
+            containerColor = WarmSurface,
             shape = RoundedCornerShape(16.dp)
         )
     }

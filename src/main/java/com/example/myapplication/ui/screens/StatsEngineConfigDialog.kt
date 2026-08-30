@@ -1,13 +1,12 @@
 package com.example.myapplication.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,7 +22,6 @@ import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.FlashOn
-import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Save
@@ -32,11 +30,7 @@ import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -44,10 +38,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -57,6 +49,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -69,7 +62,24 @@ import com.example.myapplication.ai.StatsAIAnalyzer
 import com.example.myapplication.data.model.AIEngineType
 import com.example.myapplication.data.model.CloudProviderConfig
 import com.example.myapplication.data.model.StatsPeriodType
-import kotlinx.coroutines.flow.first
+import com.example.myapplication.ui.theme.AmberWarm
+import com.example.myapplication.ui.theme.AmberWarmContainer
+import com.example.myapplication.ui.theme.CaramelSecondary
+import com.example.myapplication.ui.theme.CoralDanger
+import com.example.myapplication.ui.theme.CoralDangerContainer
+import com.example.myapplication.ui.theme.OnAmberWarmContainer
+import com.example.myapplication.ui.theme.OnCoralDangerContainer
+import com.example.myapplication.ui.theme.OnSageGreenContainer
+import com.example.myapplication.ui.theme.SageGreen
+import com.example.myapplication.ui.theme.SageGreenContainer
+import com.example.myapplication.ui.theme.TerracottaPrimary
+import com.example.myapplication.ui.theme.TerracottaPrimaryContainer
+import com.example.myapplication.ui.theme.WarmBorder
+import com.example.myapplication.ui.theme.WarmSurface
+import com.example.myapplication.ui.theme.WarmSurfaceContainer
+import com.example.myapplication.ui.theme.WarmTextMuted
+import com.example.myapplication.ui.theme.WarmTextPrimary
+import com.example.myapplication.ui.theme.WarmTextSecondary
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -102,13 +112,13 @@ fun StatsEngineConfigDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF141824),
+        containerColor = WarmSurface,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Rounded.Cloud,
                     contentDescription = null,
-                    tint = Color(0xFF00E5FF),
+                    tint = TerracottaPrimary,
                     modifier = Modifier.size(22.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -116,22 +126,19 @@ fun StatsEngineConfigDialog(
                     text = "自律统计 AI 引擎配置",
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = WarmTextPrimary
                 )
                 Spacer(modifier = Modifier.width(6.dp))
-                Box(
-                    modifier = Modifier
-                        .background(
-                            if (isTestModeEnabled) Color(0x33FFB300) else Color(0x3300E676),
-                            RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = if (isTestModeEnabled) AmberWarmContainer else SageGreenContainer
                 ) {
                     Text(
                         text = if (isTestModeEnabled) "🧪 测试环境" else "🛡️ 正式环境",
                         fontSize = 10.sp,
-                        color = if (isTestModeEnabled) Color(0xFFFFB300) else Color(0xFF00E676),
-                        fontWeight = FontWeight.Bold
+                        color = if (isTestModeEnabled) OnAmberWarmContainer else OnSageGreenContainer,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
             }
@@ -145,7 +152,7 @@ fun StatsEngineConfigDialog(
                 Text(
                     text = "用于定期生成日/周/月/季/半年/年报的独立 AI 大模型配置（与拦截审查官完全隔离独立，支持任意 OpenAI 兼容模型）：",
                     fontSize = 12.sp,
-                    color = Color(0xFF90A4AE),
+                    color = WarmTextSecondary,
                     lineHeight = 16.sp
                 )
                 Spacer(modifier = Modifier.height(12.dp))
@@ -154,29 +161,29 @@ fun StatsEngineConfigDialog(
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     AIEngineType.entries.forEach { engine ->
                         val isSelected = selectedEngineType == engine
-                        Card(
+                        Surface(
                             modifier = Modifier
                                 .weight(1f)
+                                .clip(RoundedCornerShape(10.dp))
                                 .clickable { selectedEngineType = engine },
                             shape = RoundedCornerShape(10.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) Color(0xFF1B2335) else Color(0xFF0E111C)
-                            )
+                            color = if (isSelected) TerracottaPrimaryContainer else WarmSurfaceContainer,
+                            border = BorderStroke(1.dp, if (isSelected) TerracottaPrimary else WarmBorder)
                         ) {
                             Row(
-                                modifier = Modifier.padding(10.dp),
+                                modifier = Modifier.padding(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
                                     selected = isSelected,
                                     onClick = { selectedEngineType = engine },
-                                    colors = RadioButtonDefaults.colors(selectedColor = Color(0xFF00E5FF))
+                                    colors = RadioButtonDefaults.colors(selectedColor = TerracottaPrimary)
                                 )
                                 Text(
                                     text = if (engine == AIEngineType.CLOUD) "云端大模型" else "端侧离线",
                                     fontSize = 13.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    color = if (isSelected) Color.White else Color(0xFF90A4AE)
+                                    color = if (isSelected) TerracottaPrimary else WarmTextSecondary
                                 )
                             }
                         }
@@ -191,7 +198,7 @@ fun StatsEngineConfigDialog(
                         value = apiKey,
                         onValueChange = { apiKey = it },
                         label = { Text("API Key", fontSize = 12.sp) },
-                        placeholder = { Text("请输入 API Key (sk-...)", fontSize = 12.sp, color = Color(0xFF546E7A)) },
+                        placeholder = { Text("请输入 API Key (sk-...)", fontSize = 12.sp, color = WarmTextMuted) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         visualTransformation = if (isApiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -200,16 +207,18 @@ fun StatsEngineConfigDialog(
                                 Icon(
                                     imageVector = if (isApiKeyVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
                                     contentDescription = null,
-                                    tint = Color(0xFF78909C),
+                                    tint = WarmTextSecondary,
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
                         },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF00E5FF),
-                            unfocusedBorderColor = Color(0xFF263238),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedBorderColor = TerracottaPrimary,
+                            unfocusedBorderColor = WarmBorder,
+                            focusedTextColor = WarmTextPrimary,
+                            unfocusedTextColor = WarmTextPrimary,
+                            focusedContainerColor = WarmSurface,
+                            unfocusedContainerColor = WarmSurface
                         )
                     )
 
@@ -220,14 +229,16 @@ fun StatsEngineConfigDialog(
                         value = baseUrl,
                         onValueChange = { baseUrl = it },
                         label = { Text("API Base URL", fontSize = 12.sp) },
-                        placeholder = { Text(CloudProviderConfig.DEFAULT_BASE_URL, fontSize = 12.sp, color = Color(0xFF546E7A)) },
+                        placeholder = { Text(CloudProviderConfig.DEFAULT_BASE_URL, fontSize = 12.sp, color = WarmTextMuted) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF00E5FF),
-                            unfocusedBorderColor = Color(0xFF263238),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedBorderColor = TerracottaPrimary,
+                            unfocusedBorderColor = WarmBorder,
+                            focusedTextColor = WarmTextPrimary,
+                            unfocusedTextColor = WarmTextPrimary,
+                            focusedContainerColor = WarmSurface,
+                            unfocusedContainerColor = WarmSurface
                         )
                     )
 
@@ -238,14 +249,16 @@ fun StatsEngineConfigDialog(
                         value = modelName,
                         onValueChange = { modelName = it },
                         label = { Text("Model Name", fontSize = 12.sp) },
-                        placeholder = { Text(CloudProviderConfig.DEFAULT_MODEL_NAME, fontSize = 12.sp, color = Color(0xFF546E7A)) },
+                        placeholder = { Text(CloudProviderConfig.DEFAULT_MODEL_NAME, fontSize = 12.sp, color = WarmTextMuted) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF00E5FF),
-                            unfocusedBorderColor = Color(0xFF263238),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White
+                            focusedBorderColor = TerracottaPrimary,
+                            unfocusedBorderColor = WarmBorder,
+                            focusedTextColor = WarmTextPrimary,
+                            unfocusedTextColor = WarmTextPrimary,
+                            focusedContainerColor = WarmSurface,
+                            unfocusedContainerColor = WarmSurface
                         )
                     )
 
@@ -273,31 +286,31 @@ fun StatsEngineConfigDialog(
                             },
                             enabled = !isCheckingHealth && apiKey.isNotBlank(),
                             shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(
+                            border = BorderStroke(
                                 1.dp,
-                                if (apiKey.isNotBlank()) Color(0xFF00E5FF) else Color(0xFF37474F)
+                                if (apiKey.isNotBlank()) TerracottaPrimary else WarmBorder
                             )
                         ) {
                             if (isCheckingHealth) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(12.dp),
-                                    color = Color(0xFF00E5FF),
+                                    color = TerracottaPrimary,
                                     strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("正在探测...", fontSize = 11.sp, color = Color(0xFF00E5FF))
+                                Text("正在探测...", fontSize = 11.sp, color = TerracottaPrimary)
                             } else {
                                 Icon(
                                     imageVector = Icons.Rounded.FlashOn,
                                     contentDescription = null,
-                                    tint = if (apiKey.isNotBlank()) Color(0xFF00E5FF) else Color(0xFF78909C),
+                                    tint = if (apiKey.isNotBlank()) TerracottaPrimary else WarmTextMuted,
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = "⚡ 测通 API 连通性",
                                     fontSize = 11.sp,
-                                    color = if (apiKey.isNotBlank()) Color(0xFF00E5FF) else Color(0xFF78909C),
+                                    color = if (apiKey.isNotBlank()) TerracottaPrimary else WarmTextMuted,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -307,43 +320,43 @@ fun StatsEngineConfigDialog(
                     if (healthResult != null) {
                         Spacer(modifier = Modifier.height(6.dp))
                         val res = healthResult!!
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    if (res.success) Color(0x2200E676) else Color(0x22FF5252),
-                                    RoundedCornerShape(6.dp)
-                                )
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = if (res.success) SageGreenContainer else CoralDangerContainer,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(
-                                imageVector = if (res.success) Icons.Rounded.CheckCircle else Icons.Rounded.ErrorOutline,
-                                contentDescription = null,
-                                tint = if (res.success) Color(0xFF00E676) else Color(0xFFFF5252),
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = res.message,
-                                fontSize = 11.sp,
-                                color = if (res.success) Color(0xFF00E676) else Color(0xFFFF5252),
-                                fontWeight = FontWeight.Medium
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (res.success) Icons.Rounded.CheckCircle else Icons.Rounded.ErrorOutline,
+                                    contentDescription = null,
+                                    tint = if (res.success) SageGreen else CoralDanger,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = res.message,
+                                    fontSize = 11.sp,
+                                    color = if (res.success) OnSageGreenContainer else OnCoralDangerContainer,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 } else {
-                    Card(
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF0E111C))
+                        color = WarmSurfaceContainer
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     imageVector = Icons.Rounded.Memory,
                                     contentDescription = null,
-                                    tint = Color(0xFF00E676),
+                                    tint = SageGreen,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
@@ -351,14 +364,14 @@ fun StatsEngineConfigDialog(
                                     text = "端侧离线引擎",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = WarmTextPrimary
                                 )
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "使用本地 llama.cpp 离线推理模型。提示：端侧 3B 模型长文本总结能力较轻量，推荐云端大模型以获得更深刻的自律导师洞见。",
                                 fontSize = 11.sp,
-                                color = Color(0xFF90A4AE),
+                                color = WarmTextSecondary,
                                 lineHeight = 15.sp
                             )
                         }
@@ -368,10 +381,11 @@ fun StatsEngineConfigDialog(
                 // 开发者测试模式下的测试生成报告按钮与结果展示
                 if (isTestModeEnabled) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Card(
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1B2335))
+                        color = WarmSurfaceContainer,
+                        border = BorderStroke(1.dp, WarmBorder)
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(
@@ -383,7 +397,7 @@ fun StatsEngineConfigDialog(
                                     text = "🧪 开发者测试生成",
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF00E5FF)
+                                    color = TerracottaPrimary
                                 )
                                 Button(
                                     onClick = {
@@ -429,15 +443,15 @@ fun StatsEngineConfigDialog(
                                     },
                                     enabled = !isTesting,
                                     colors = ButtonDefaults.buttonColors(
-                                        containerColor = Color(0xFF00E5FF),
-                                        contentColor = Color(0xFF0D0F18)
+                                        containerColor = TerracottaPrimary,
+                                        contentColor = Color.White
                                     ),
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
                                     if (isTesting) {
                                         CircularProgressIndicator(
                                             modifier = Modifier.size(14.dp),
-                                            color = Color.Black,
+                                            color = Color.White,
                                             strokeWidth = 2.dp
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
@@ -459,7 +473,7 @@ fun StatsEngineConfigDialog(
                                 Text(
                                     text = testResultText ?: "",
                                     fontSize = 11.sp,
-                                    color = if (isTestError) Color(0xFFFF5252) else Color(0xFF00E676),
+                                    color = if (isTestError) CoralDanger else SageGreen,
                                     lineHeight = 15.sp
                                 )
                             }
@@ -492,8 +506,8 @@ fun StatsEngineConfigDialog(
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF00E5FF),
-                    contentColor = Color(0xFF0D0F18)
+                    containerColor = TerracottaPrimary,
+                    contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(10.dp)
             ) {
@@ -507,8 +521,9 @@ fun StatsEngineConfigDialog(
                 onClick = onDismiss,
                 shape = RoundedCornerShape(10.dp)
             ) {
-                Text("取消", color = Color(0xFF90A4AE))
+                Text("取消", color = WarmTextSecondary)
             }
-        }
+        },
+        shape = RoundedCornerShape(16.dp)
     )
 }

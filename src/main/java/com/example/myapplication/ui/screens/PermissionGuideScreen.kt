@@ -9,6 +9,7 @@ import android.os.Environment
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.accessibility.AccessibilityManager
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,21 +27,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.Analytics
 import androidx.compose.material.icons.rounded.BatterySaver
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Layers
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Notifications
-import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PowerSettingsNew
-import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -50,16 +49,31 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.delay
-
-import androidx.compose.material.icons.rounded.Analytics
+import com.example.myapplication.ui.theme.AmberWarm
+import com.example.myapplication.ui.theme.AmberWarmContainer
+import com.example.myapplication.ui.theme.CaramelSecondary
+import com.example.myapplication.ui.theme.CaramelSecondaryContainer
+import com.example.myapplication.ui.theme.OnSageGreenContainer
+import com.example.myapplication.ui.theme.SageGreen
+import com.example.myapplication.ui.theme.SageGreenContainer
+import com.example.myapplication.ui.theme.TerracottaPrimary
+import com.example.myapplication.ui.theme.TerracottaPrimaryContainer
+import com.example.myapplication.ui.theme.WarmBackground
+import com.example.myapplication.ui.theme.WarmBorder
+import com.example.myapplication.ui.theme.WarmSurface
+import com.example.myapplication.ui.theme.WarmTextMuted
+import com.example.myapplication.ui.theme.WarmTextPrimary
+import com.example.myapplication.ui.theme.WarmTextSecondary
 import com.example.myapplication.util.UsageStatsHelper
+import kotlinx.coroutines.delay
 
 @Composable
 fun PermissionGuideScreen() {
@@ -99,35 +113,59 @@ fun PermissionGuideScreen() {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0C0E17))
+            .background(WarmBackground)
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(
+                        elevation = 2.dp,
+                        shape = RoundedCornerShape(18.dp),
+                        spotColor = Color(0x108D5B3E)
+                    ),
                 shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF141824))
+                color = WarmSurface,
+                border = BorderStroke(1.dp, WarmBorder)
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    val deviceName = com.example.myapplication.util.DeviceInfoHelper.getDeviceBrandAndModel()
-                    Text(
-                        text = "Android 权限与系统保活指南",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "为了让 $deviceName 上的无障碍拦截和端侧 AI 能够秒级响应且不被系统杀死，请依次配置以下必要权限：",
-                        fontSize = 12.sp,
-                        color = Color(0xFF90A4AE),
-                        lineHeight = 16.sp
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(TerracottaPrimaryContainer, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Shield,
+                            contentDescription = null,
+                            tint = TerracottaPrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        val deviceName = com.example.myapplication.util.DeviceInfoHelper.getDeviceBrandAndModel()
+                        Text(
+                            text = "系统保活与权限授权清单",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = WarmTextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "保障在 $deviceName 上无障碍拦截与端侧 AI 秒级响应，防止后台被系统省电杀除",
+                            fontSize = 11.sp,
+                            color = WarmTextSecondary,
+                            lineHeight = 15.sp
+                        )
+                    }
                 }
             }
         }
@@ -152,7 +190,7 @@ fun PermissionGuideScreen() {
         item {
             PermissionItem(
                 title = "显示在其他应用上层 (必需)",
-                desc = "用于在拦截瞬间弹出全屏暗色毛玻璃 AI 审批与仪表盘窗口",
+                desc = "用于在拦截瞬间弹出毛玻璃 AI 审批与时长选择窗口",
                 icon = Icons.Rounded.Widgets,
                 isGranted = hasOverlay,
                 onClick = {
@@ -171,7 +209,7 @@ fun PermissionGuideScreen() {
         item {
             PermissionItem(
                 title = "所有文件访问权限 (模型读取必需)",
-                desc = "Android 14 限制：需授权此项方可读取 Download 目录下的 GGUF 模型",
+                desc = "Android 14+ 需授权此项方可读取 Download 目录下的 GGUF 模型",
                 icon = Icons.Rounded.Folder,
                 isGranted = hasAllFilesAccess,
                 onClick = {
@@ -188,7 +226,7 @@ fun PermissionGuideScreen() {
         item {
             PermissionItem(
                 title = "使用情况访问权限 (自律统计必需)",
-                desc = "用于精确获取各 App 的真实使用时长，为日/周/月/季/半年/年报提供系统数据",
+                desc = "精确获取各 App 真实使用时长，为统计报表提供系统数据",
                 icon = Icons.Rounded.Analytics,
                 isGranted = hasUsageStats,
                 onClick = {
@@ -204,7 +242,7 @@ fun PermissionGuideScreen() {
         item {
             PermissionItem(
                 title = "电池无限制 / 忽略省电优化",
-                desc = "防止 HyperOS 省电策略在后台休眠时关闭拦截服务",
+                desc = "防止厂商省电策略在后台休眠时关闭常驻拦截服务",
                 icon = Icons.Rounded.BatterySaver,
                 isGranted = isIgnoringBattery,
                 onClick = {
@@ -219,7 +257,7 @@ fun PermissionGuideScreen() {
         // 6. HyperOS 自启动与应用详情
         item {
             PermissionItem(
-                title = "HyperOS 自启动与后台锁定",
+                title = "厂商系统自启动与后台锁定",
                 desc = "建议开启【允许自启动】并在多任务列表中给本应用【加锁】以获最强保活",
                 icon = Icons.Rounded.PowerSettingsNew,
                 isGranted = false,
@@ -245,17 +283,22 @@ private fun PermissionItem(
     isCheckable: Boolean = true,
     onClick: () -> Unit
 ) {
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF141824))
+        color = WarmSurface,
+        border = BorderStroke(
+            1.dp,
+            if (isGranted) SageGreen.copy(alpha = 0.35f) else WarmBorder
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -267,7 +310,7 @@ private fun PermissionItem(
                     modifier = Modifier
                         .size(40.dp)
                         .background(
-                            if (isGranted) Color(0x2200E676) else Color(0x2200E5FF),
+                            if (isGranted) SageGreenContainer else TerracottaPrimaryContainer,
                             CircleShape
                         ),
                     contentAlignment = Alignment.Center
@@ -275,7 +318,7 @@ private fun PermissionItem(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = if (isGranted) Color(0xFF00E676) else Color(0xFF00E5FF),
+                        tint = if (isGranted) SageGreen else TerracottaPrimary,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -287,13 +330,13 @@ private fun PermissionItem(
                         text = title,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = WarmTextPrimary
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = desc,
                         fontSize = 11.sp,
-                        color = Color(0xFF90A4AE),
+                        color = WarmTextSecondary,
                         lineHeight = 15.sp
                     )
                 }
@@ -303,22 +346,30 @@ private fun PermissionItem(
 
             if (isCheckable) {
                 if (isGranted) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Rounded.CheckCircle,
-                            contentDescription = "已开启",
-                            tint = Color(0xFF00E676),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(text = "已开启", color = Color(0xFF00E676), fontSize = 12.sp)
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = SageGreenContainer
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.CheckCircle,
+                                contentDescription = "已开启",
+                                tint = SageGreen,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = "已就绪", color = OnSageGreenContainer, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
                 } else {
                     Button(
                         onClick = onClick,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF00E5FF),
-                            contentColor = Color(0xFF0D0F18)
+                            containerColor = TerracottaPrimary,
+                            contentColor = Color.White
                         ),
                         shape = RoundedCornerShape(10.dp)
                     ) {
@@ -329,7 +380,7 @@ private fun PermissionItem(
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
                     contentDescription = "前往设置",
-                    tint = Color(0xFF90CAF9),
+                    tint = CaramelSecondary,
                     modifier = Modifier.size(18.dp)
                 )
             }

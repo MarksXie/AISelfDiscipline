@@ -2,6 +2,7 @@ package com.example.myapplication.ui.screens
 
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -38,14 +40,13 @@ import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -62,6 +63,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -72,6 +74,22 @@ import androidx.core.graphics.drawable.toBitmap
 import com.example.myapplication.AppApplication
 import com.example.myapplication.data.model.AppInfo
 import com.example.myapplication.data.model.AppRuleProfile
+import com.example.myapplication.ui.theme.CoralDanger
+import com.example.myapplication.ui.theme.CoralDangerContainer
+import com.example.myapplication.ui.theme.OnCoralDangerContainer
+import com.example.myapplication.ui.theme.OnSageGreenContainer
+import com.example.myapplication.ui.theme.SageGreen
+import com.example.myapplication.ui.theme.SageGreenContainer
+import com.example.myapplication.ui.theme.TerracottaPrimary
+import com.example.myapplication.ui.theme.TerracottaPrimaryContainer
+import com.example.myapplication.ui.theme.WarmBackground
+import com.example.myapplication.ui.theme.WarmBorder
+import com.example.myapplication.ui.theme.WarmBorderLight
+import com.example.myapplication.ui.theme.WarmSurface
+import com.example.myapplication.ui.theme.WarmSurfaceContainer
+import com.example.myapplication.ui.theme.WarmTextMuted
+import com.example.myapplication.ui.theme.WarmTextPrimary
+import com.example.myapplication.ui.theme.WarmTextSecondary
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -111,57 +129,66 @@ fun BlacklistScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0D0F18))
-            .padding(16.dp)
+            .background(WarmBackground)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         // 头部标题与描述
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Security,
-                contentDescription = null,
-                tint = Color(0xFF00E5FF),
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(TerracottaPrimaryContainer, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Security,
+                    contentDescription = null,
+                    tint = TerracottaPrimary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Text(
-                    text = "防沉迷拦截应用管理",
-                    fontSize = 20.sp,
+                    text = "防沉迷受保护应用",
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = WarmTextPrimary
                 )
                 Text(
-                    text = "开启拦截的应用在打开时将触发 AI 意图判定与专属自律规则",
-                    fontSize = 12.sp,
-                    color = Color(0xFF90A4AE)
+                    text = "被拦截的应用打开时触发 AI 意图判定与专属自律规则",
+                    fontSize = 11.sp,
+                    color = WarmTextSecondary
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // 搜索框
+        // 搜索框（纯白暖底 + 1dp 细暖边框）
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("搜索应用名称或包名...", fontSize = 13.sp, color = Color(0xFF546E7A)) },
+            placeholder = { Text("搜索应用名称或包名...", fontSize = 13.sp, color = WarmTextMuted) },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Rounded.Search,
                     contentDescription = null,
-                    tint = Color(0xFF90A4AE)
+                    tint = WarmTextSecondary
                 )
             },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color(0xFF00E5FF),
-                unfocusedBorderColor = Color(0xFF23283B),
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                focusedBorderColor = TerracottaPrimary,
+                unfocusedBorderColor = WarmBorder,
+                focusedTextColor = WarmTextPrimary,
+                unfocusedTextColor = WarmTextPrimary,
+                focusedContainerColor = WarmSurface,
+                unfocusedContainerColor = WarmSurface
             ),
             singleLine = true
         )
@@ -179,12 +206,12 @@ fun BlacklistScreen() {
                     text = "已拦截 ${blacklistedSet.size} 个应用",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF00E5FF)
+                    color = TerracottaPrimary
                 )
                 Text(
                     text = "共发现 ${allApps.size} 个应用",
                     fontSize = 11.sp,
-                    color = Color(0xFF78909C)
+                    color = WarmTextMuted
                 )
             }
 
@@ -196,8 +223,8 @@ fun BlacklistScreen() {
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isAllSelected) Color(0xFF262D40) else Color(0xFF00E5FF),
-                    contentColor = if (isAllSelected) Color(0xFFFF5252) else Color(0xFF0D0F18)
+                    containerColor = if (isAllSelected) CoralDangerContainer else TerracottaPrimaryContainer,
+                    contentColor = if (isAllSelected) CoralDanger else TerracottaPrimary
                 ),
                 shape = RoundedCornerShape(10.dp),
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
@@ -224,7 +251,7 @@ fun BlacklistScreen() {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = Color(0xFF00E5FF))
+                CircularProgressIndicator(color = TerracottaPrimary)
             }
         } else {
             LazyColumn(
@@ -274,11 +301,19 @@ private fun AppItemCard(
         }
     }
 
-    Card(
-        modifier = Modifier.fillMaxWidth(),
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 1.dp,
+                shape = RoundedCornerShape(14.dp),
+                spotColor = Color(0x108D5B3E)
+            ),
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (app.isBlocked) Color(0xFF1A1F30) else Color(0xFF121520)
+        color = WarmSurface,
+        border = BorderStroke(
+            1.dp,
+            if (app.isBlocked) TerracottaPrimary.copy(alpha = 0.3f) else WarmBorder
         )
     ) {
         Row(
@@ -307,13 +342,13 @@ private fun AppItemCard(
                     Box(
                         modifier = Modifier
                             .size(38.dp)
-                            .background(Color(0xFF2A2E3D), RoundedCornerShape(8.dp)),
+                            .background(WarmSurfaceContainer, RoundedCornerShape(8.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Android,
                             contentDescription = null,
-                            tint = Color(0xFF00E5FF),
+                            tint = TerracottaPrimary,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -326,12 +361,12 @@ private fun AppItemCard(
                         text = app.appName,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White
+                        color = WarmTextPrimary
                     )
                     Text(
                         text = app.packageName,
                         fontSize = 11.sp,
-                        color = Color(0xFF78909C),
+                        color = WarmTextMuted,
                         maxLines = 1
                     )
                 }
@@ -346,7 +381,7 @@ private fun AppItemCard(
                     Icon(
                         imageVector = Icons.Rounded.Tune,
                         contentDescription = "自律规则",
-                        tint = if (app.isBlocked) Color(0xFF00E5FF) else Color(0xFF78909C),
+                        tint = if (app.isBlocked) TerracottaPrimary else WarmTextSecondary,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -358,9 +393,9 @@ private fun AppItemCard(
                     onCheckedChange = { onToggle(it) },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = Color.White,
-                        checkedTrackColor = Color(0xFF00E5FF),
-                        uncheckedThumbColor = Color(0xFF546E7A),
-                        uncheckedTrackColor = Color(0xFF1E2333)
+                        checkedTrackColor = TerracottaPrimary,
+                        uncheckedThumbColor = WarmTextSecondary,
+                        uncheckedTrackColor = WarmBorder
                     )
                 )
             }
@@ -397,13 +432,18 @@ private fun AppRulesDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = Icons.Rounded.Tune, contentDescription = null, tint = Color(0xFF00E5FF), modifier = Modifier.size(22.dp))
+                Icon(
+                    imageVector = Icons.Rounded.Tune,
+                    contentDescription = null,
+                    tint = TerracottaPrimary,
+                    modifier = Modifier.size(22.dp)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = "【${app.appName}】专属自律规则",
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color.White
+                    color = WarmTextPrimary
                 )
             }
         },
@@ -418,89 +458,100 @@ private fun AppRulesDialog(
                     Text(
                         text = "长期行为约束将随大模型 System Prompt 动态注入，引导精准判断：",
                         fontSize = 11.sp,
-                        color = Color(0xFF90A4AE),
+                        color = WarmTextSecondary,
                         lineHeight = 15.sp
                     )
                 }
 
                 // 1. 允许使用的正向目的 (应当 ALLOW)
                 item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFF141824), RoundedCornerShape(12.dp))
-                            .padding(12.dp)
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = WarmSurfaceContainer,
+                        border = BorderStroke(0.8.dp, SageGreen.copy(alpha = 0.3f))
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Rounded.CheckCircle, contentDescription = null, tint = Color(0xFF00E676), modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "明确允许使用的正向目的 (ALLOW)",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF00E676)
-                            )
-                        }
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Rounded.CheckCircle,
+                                    contentDescription = null,
+                                    tint = SageGreen,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "明确允许使用的正向目的 (ALLOW)",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = SageGreen
+                                )
+                            }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            allowedList.forEach { rule ->
-                                Box(
-                                    modifier = Modifier
-                                        .background(Color(0xFF1E2638), RoundedCornerShape(8.dp))
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(text = rule, fontSize = 11.sp, color = Color(0xFF80D8FF))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            imageVector = Icons.Rounded.Close,
-                                            contentDescription = "删除",
-                                            tint = Color(0xFFFF8A80),
-                                            modifier = Modifier
-                                                .size(14.dp)
-                                                .clickable { allowedList.remove(rule) }
-                                        )
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                allowedList.forEach { rule ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = SageGreenContainer
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(text = rule, fontSize = 11.sp, color = OnSageGreenContainer)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Icon(
+                                                imageVector = Icons.Rounded.Close,
+                                                contentDescription = "删除",
+                                                tint = SageGreen,
+                                                modifier = Modifier
+                                                    .size(14.dp)
+                                                    .clickable { allowedList.remove(rule) }
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedTextField(
-                                value = newAllowedInput,
-                                onValueChange = { newAllowedInput = it },
-                                placeholder = { Text("添加允许项 (如'观看指定收藏教程')", fontSize = 11.sp) },
-                                singleLine = true,
-                                modifier = Modifier.weight(1f),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFF00E676),
-                                    unfocusedBorderColor = Color(0xFF263238),
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            IconButton(
-                                onClick = {
-                                    if (newAllowedInput.isNotBlank()) {
-                                        allowedList.add(newAllowedInput.trim())
-                                        newAllowedInput = ""
-                                    }
-                                }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(imageVector = Icons.Rounded.Add, contentDescription = "添加", tint = Color(0xFF00E676))
+                                OutlinedTextField(
+                                    value = newAllowedInput,
+                                    onValueChange = { newAllowedInput = it },
+                                    placeholder = { Text("添加允许项 (如'观看指定收藏教程')", fontSize = 11.sp, color = WarmTextMuted) },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = SageGreen,
+                                        unfocusedBorderColor = WarmBorder,
+                                        focusedTextColor = WarmTextPrimary,
+                                        unfocusedTextColor = WarmTextPrimary,
+                                        focusedContainerColor = WarmSurface,
+                                        unfocusedContainerColor = WarmSurface
+                                    ),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                IconButton(
+                                    onClick = {
+                                        if (newAllowedInput.isNotBlank()) {
+                                            allowedList.add(newAllowedInput.trim())
+                                            newAllowedInput = ""
+                                        }
+                                    }
+                                ) {
+                                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "添加", tint = SageGreen)
+                                }
                             }
                         }
                     }
@@ -508,82 +559,93 @@ private fun AppRulesDialog(
 
                 // 2. 严禁放行的低质量消遣 (应当 DENY)
                 item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFF141824), RoundedCornerShape(12.dp))
-                            .padding(12.dp)
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = WarmSurfaceContainer,
+                        border = BorderStroke(0.8.dp, CoralDanger.copy(alpha = 0.3f))
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(imageVector = Icons.Rounded.Block, contentDescription = null, tint = Color(0xFFFF1744), modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "严禁放行的低质量消遣 (DENY)",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFF5252)
-                            )
-                        }
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Block,
+                                    contentDescription = null,
+                                    tint = CoralDanger,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "严禁放行的低质量消遣 (DENY)",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = CoralDanger
+                                )
+                            }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            forbiddenList.forEach { rule ->
-                                Box(
-                                    modifier = Modifier
-                                        .background(Color(0xFF261D24), RoundedCornerShape(8.dp))
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(text = rule, fontSize = 11.sp, color = Color(0xFFFF8A80))
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Icon(
-                                            imageVector = Icons.Rounded.Close,
-                                            contentDescription = "删除",
-                                            tint = Color(0xFFFF5252),
-                                            modifier = Modifier
-                                                .size(14.dp)
-                                                .clickable { forbiddenList.remove(rule) }
-                                        )
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                forbiddenList.forEach { rule ->
+                                    Surface(
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = CoralDangerContainer
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(text = rule, fontSize = 11.sp, color = OnCoralDangerContainer)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Icon(
+                                                imageVector = Icons.Rounded.Close,
+                                                contentDescription = "删除",
+                                                tint = CoralDanger,
+                                                modifier = Modifier
+                                                    .size(14.dp)
+                                                    .clickable { forbiddenList.remove(rule) }
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedTextField(
-                                value = newForbiddenInput,
-                                onValueChange = { newForbiddenInput = it },
-                                placeholder = { Text("添加禁止项 (如'无目的刷推荐短视频')", fontSize = 11.sp) },
-                                singleLine = true,
-                                modifier = Modifier.weight(1f),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = Color(0xFFFF5252),
-                                    unfocusedBorderColor = Color(0xFF263238),
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            IconButton(
-                                onClick = {
-                                    if (newForbiddenInput.isNotBlank()) {
-                                        forbiddenList.add(newForbiddenInput.trim())
-                                        newForbiddenInput = ""
-                                    }
-                                }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(imageVector = Icons.Rounded.Add, contentDescription = "添加", tint = Color(0xFFFF5252))
+                                OutlinedTextField(
+                                    value = newForbiddenInput,
+                                    onValueChange = { newForbiddenInput = it },
+                                    placeholder = { Text("添加禁止项 (如'无目的刷推荐短视频')", fontSize = 11.sp, color = WarmTextMuted) },
+                                    singleLine = true,
+                                    modifier = Modifier.weight(1f),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = CoralDanger,
+                                        unfocusedBorderColor = WarmBorder,
+                                        focusedTextColor = WarmTextPrimary,
+                                        unfocusedTextColor = WarmTextPrimary,
+                                        focusedContainerColor = WarmSurface,
+                                        unfocusedContainerColor = WarmSurface
+                                    ),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                IconButton(
+                                    onClick = {
+                                        if (newForbiddenInput.isNotBlank()) {
+                                            forbiddenList.add(newForbiddenInput.trim())
+                                            newForbiddenInput = ""
+                                        }
+                                    }
+                                ) {
+                                    Icon(imageVector = Icons.Rounded.Add, contentDescription = "添加", tint = CoralDanger)
+                                }
                             }
                         }
                     }
@@ -606,9 +668,10 @@ private fun AppRulesDialog(
                     onDismiss()
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF00E5FF),
-                    contentColor = Color(0xFF0D0F18)
-                )
+                    containerColor = TerracottaPrimary,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(10.dp)
             ) {
                 Icon(imageVector = Icons.Rounded.Save, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(4.dp))
@@ -629,17 +692,17 @@ private fun AppRulesDialog(
                         }
                     }
                 ) {
-                    Icon(imageVector = Icons.Rounded.RestartAlt, contentDescription = null, tint = Color(0xFF90A4AE), modifier = Modifier.size(16.dp))
+                    Icon(imageVector = Icons.Rounded.RestartAlt, contentDescription = null, tint = WarmTextMuted, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("重置默认", color = Color(0xFF90A4AE))
+                    Text("重置默认", color = WarmTextMuted)
                 }
                 Spacer(modifier = Modifier.width(6.dp))
-                OutlinedButton(onClick = onDismiss) {
-                    Text("关闭")
+                OutlinedButton(onClick = onDismiss, shape = RoundedCornerShape(10.dp)) {
+                    Text("关闭", color = WarmTextSecondary)
                 }
             }
         },
-        containerColor = Color(0xFF1A1F30),
+        containerColor = WarmSurface,
         shape = RoundedCornerShape(16.dp)
     )
 }
